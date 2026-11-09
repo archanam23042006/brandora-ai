@@ -17,10 +17,11 @@ CLAIM_EXPLAIN = {
 }
 
 CLAIM_FIX = {
-    "CLAIM-01": "Remove the ranking claim or use a verified strength, e.g. 'Over 40 cafes across 6 cities'.",
-    "CLAIM-02": "Replace it with a promise you can support, e.g. 'We work hard to make every visit enjoyable'.",
-    "CLAIM-03": "Remove the health claim and describe taste or ingredients instead.",
+    "CLAIM-01": "Remove the ranking claim, or replace it with a verified fact from your approved evidence ledger.",
+    "CLAIM-02": "Replace it with a promise you can support, for example 'We work hard to do our best for you'.",
+    "CLAIM-03": "Remove the health claim and describe the product's features or ingredients instead.",
 }
+
 
 FACT_PATTERNS = {
     "founding year": r"(?:founded|established|started|since)(?:\s+in)?\s+(\d{4})",

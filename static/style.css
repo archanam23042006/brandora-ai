@@ -44,3 +44,17 @@ mark { background: #fff3b0; padding: 1px 4px; border-radius: 4px; }
 html { scroll-behavior: smooth; }
 .finding, #revise { scroll-margin-top: 80px; }
 .error { background: #fde2e2; color: #b91c1c; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
+.action-card { border-left: 6px solid #0f766e; }
+.btn.danger { border-color: #b91c1c; color: #b91c1c; }
+.decide .btn.primary { width: auto; }
+.state-open { background: #f4f7f7; color: #555; }
+.state-waiting { background: #fff3b0; color: #7a5b00; }
+.state-must_fix { background: #fde2e2; color: #b91c1c; }
+.stepper { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.step { flex: 1; min-width: 120px; text-align: center; padding: 8px; border-radius: 8px; background: #e5eceb; color: #555; font-size: 13px; }
+.step.done { background: #ccefe9; color: #0f766e; }
+.step.now { background: #0f766e; color: #fff; font-weight: bold; }
+.next-box { background: #eef6f5; border-left: 6px solid #0f766e; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+.decide-form label { margin-top: 0; }
+.hint { background: #f4f7f7; color: #444; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin: 0 0 10px; }
+.reason-wrap { margin-bottom: 4px; }

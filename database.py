@@ -106,6 +106,17 @@ CREATE TABLE IF NOT EXISTS ai_cache_log (
     provider TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS reviewer_decisions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id INTEGER NOT NULL,
+    rule_id TEXT,
+    flagged_text TEXT NOT NULL,
+    reviewer_id INTEGER NOT NULL,
+    outcome TEXT NOT NULL,
+    note TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 

@@ -2,6 +2,14 @@
 {% block title %}{{ item.title }} | Brandora AI{% endblock %}
 {% block content %}
 <a class="back" href="{{ url_for('home') }}">&larr; All content</a>
+<div class="stepper">
+  {% for s in stages %}
+  <div class="step {% if loop.index0 < stage %}done{% elif loop.index0 == stage %}now{% endif %}">{{ s }}</div>
+  {% endfor %}
+</div>
+{% if next_msg %}
+<div class="next-box"><b>What to do now:</b> {{ next_msg }}</div>
+{% endif %}
 <div class="card">
   <div class="row">
     <h1>{{ item.title }}</h1>
@@ -23,7 +31,7 @@
 {% endif %}
 
 {% for f in findings %}
-<div class="card finding sev-border-{{ f.severity }}" id="finding-{{ f.id}}">
+<div class="card finding sev-border-{{ f.severity }}" id="finding-{{ f.id }}">
   <div class="row">
     <span class="chip sev-{{ f.severity }}">{{ f.severity }}</span>
     <span class="muted small">{% if f.origin == 'ai' %}AI suggestion{% else %}Rule engine{% endif %}</span>
@@ -33,31 +41,74 @@
   <p><b>Rule:</b> {{ f.rule_id }}{% if f.rule_title %}: {{ f.rule_title }}{% endif %}</p>
   <p class="fix"><b>Suggested fix:</b> {{ f.suggested_fix }}</p>
 
-  {% if f.decision_action %}
-  <p class="decided">
-    Decision:
-    {% if f.decision_action == 'accept' %}Accepted (will fix)
-    {% elif f.decision_action == 'ignore' %}Ignored: {{ f.decision_reason }}
-    {% else %}Human verification requested{% endif %}
+  <p class="decided state-{{ f.state }}">
+    {% if f.state == 'open' %}No decision yet
+    {% elif f.state == 'accepted' %}Accepted: fix it in your text, then re-check
+    {% elif f.state == 'ignored' %}Ignored: {{ f.decision_reason }}
+    {% elif f.state == 'waiting' %}Waiting for a reviewer: {{ f.decision_reason }}
+    {% elif f.state == 'allowed' %}Allowed as an exception by {{ f.reviewer_name }}{% if f.review_note %}: {{ f.review_note }}{% endif %}
+    {% else %}Reviewer says MUST FIX ({{ f.reviewer_name }}): {{ f.review_note }}{% endif %}
   </p>
-  {% endif %}
 
   {% if can_edit %}
-  {% if request.args.get('err') == f.id|string %}
-  <p class="error">Please write a reason before ignoring this finding.</p>
+    {% if request.args.get('err') == f.id|string %}
+    <p class="error">Please write a reason first. A reviewer needs it to decide.</p>
+
+    {% endif %}
+    <form method="post" action="{{ url_for('decide', finding_id=f.id) }}" class="decide-form">
+      <label>What will you do about this finding?</label>
+      <select name="action" class="act-select" onchange="actChange(this)">
+        <option value="accept" {% if f.decision_action == 'accept' %}selected{% endif %}>Accept: I will fix this text</option>
+        <option value="ignore" {% if f.decision_action == 'ignore' %}selected{% endif %}>Ignore: I have a valid reason to keep it</option>
+        <option value="verify" {% if f.decision_action == 'verify' %}selected{% endif %}>Ask a reviewer: I'm not sure</option>
+      </select>
+      <p class="hint hint-accept">You will change this text in the "Revise your content" box at the bottom.</p>
+      <p class="hint hint-ignore" style="display:none">The text stays as it is. {% if f.severity == 'critical' %}<b>This is a critical issue, so it will automatically go to a reviewer for a final decision.</b>{% else %}Your reason will be visible to the reviewer and manager.{% endif %}</p>
+      <p class="hint hint-verify" style="display:none">A reviewer will check this and decide. Explain your doubt in the box below.</p>
+      <div class="reason-wrap" style="display:none">
+        <label>Why? (required)</label>
+        <input type="text" name="reason" placeholder="Example: this is a direct customer quote, so we cannot change it." value="{{ f.decision_reason or '' }}">
+      </div>
+      <button class="btn" type="submit">Save decision</button>
+    </form>
   {% endif %}
-  <form method="post" action="{{ url_for('decide', finding_id=f.id) }}" class="decide">
-    <select name="action">
-      <option value="accept" {% if f.decision_action == 'accept' %}selected{% endif %}>Accept: I will fix this</option>
-      <option value="ignore" {% if f.decision_action == 'ignore' %}selected{% endif %}>Ignore (reason needed)</option>
-      <option value="verify" {% if f.decision_action == 'verify' %}selected{% endif %}>Ask a human to verify</option>
-    </select>
-    <input type="text" name="reason" placeholder="Reason (required if ignoring)" value="{{ f.decision_reason or '' }}">
-    <button class="btn" type="submit">Save decision</button>
-  </form>
+
+  {% if can_review and f.decision_action == 'verify' %}
+    {% if request.args.get('rerr') == f.id|string %}
+    <p class="error">Please write a note for the creator when choosing Must fix.</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('review_finding', finding_id=f.id) }}" class="decide">
+      <input type="text" name="note" placeholder="Note for the creator" value="{{ f.review_note or '' }}">
+      <button class="btn" name="outcome" value="must_fix" type="submit">Must fix</button>
+      <button class="btn" name="outcome" value="allow" type="submit">Allow as exception</button>
+    </form>
   {% endif %}
 </div>
 {% endfor %}
+{% if can_review %}
+<div class="card action-card">
+  <h2>Reviewer panel</h2>
+  <p class="muted">Done with all findings above? Press Finish review.</p>
+  <form method="post" action="{{ url_for('finish_review', item_id=item.id) }}">
+    <button class="btn primary" type="submit">Finish review ({{ waiting_count }} still waiting)</button>
+  </form>
+</div>
+{% endif %}
+
+{% if can_approve %}
+<div class="card action-card">
+  <h2>Manager approval</h2>
+  <p class="muted">Check the findings above, then decide.</p>
+  <form method="post" action="{{ url_for('approval', item_id=item.id) }}">
+    <textarea name="note" rows="2" placeholder="Note (required for Request changes or Reject)"></textarea>
+    <div class="decide">
+      <button class="btn primary" name="decision" value="approve" type="submit">Approve</button>
+      <button class="btn" name="decision" value="changes" type="submit">Request changes</button>
+      <button class="btn danger" name="decision" value="reject" type="submit">Reject</button>
+    </div>
+  </form>
+</div>
+{% endif %}
 
 {% if can_edit %}
 <div class="card" id="revise">
@@ -68,7 +119,27 @@
     <button class="btn primary" type="submit">Save as new version and re-check</button>
   </form>
 </div>
+
+<div class="card action-card" id="submit-approval">
+  <h2>Done? Submit for approval</h2>
+  <p class="muted">Every finding must be fixed, ignored with a reason, or sent to a reviewer.</p>
+  <form method="post" action="{{ url_for('submit_for_approval', item_id=item.id) }}">
+    <button class="btn primary" type="submit">Submit for approval</button>
+  </form>
+</div>
 {% endif %}
+
+<h2>Approval history</h2>
+<div class="card">
+  {% if not history %}<p class="muted">No activity yet.</p>{% endif %}
+  {% for h in history %}
+  <div class="version">
+    <b>{{ h.user_name }}</b> ({{ h.user_role }}) {{ h.label }}
+    <span class="muted small">| {{ h.created_at }}</span>
+    {% if h.note %}<div class="muted small">{{ h.note }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
 
 <h2>Version history</h2>
 <div class="card">
@@ -79,4 +150,14 @@
   </div>
   {% endfor %}
 </div>
+<script>
+function actChange(sel) {
+  var form = sel.closest('form');
+  ['accept', 'ignore', 'verify'].forEach(function (a) {
+    form.querySelector('.hint-' + a).style.display = (sel.value === a) ? 'block' : 'none';
+  });
+  form.querySelector('.reason-wrap').style.display = (sel.value === 'accept') ? 'none' : 'block';
+}
+document.querySelectorAll('.act-select').forEach(actChange);
+</script>
 {% endblock %}

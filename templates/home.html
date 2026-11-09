@@ -10,7 +10,20 @@
   <p>Logged in as <b>{{ current_user.role }}</b>.</p>
 </div>
 
-<h2>Content</h2>
+{% if todo %}
+<h2>Needs your action ({{ todo|length }})</h2>
+{% for i in todo %}
+<a class="card item-link action-card" href="{{ url_for('item', item_id=i.id) }}">
+  <div class="row">
+    <b>{{ i.title }}</b>
+    <span class="badge status">{{ i.status }}</span>
+  </div>
+  <span class="muted small">{{ i.content_type }} | by {{ i.creator_name }}</span>
+</a>
+{% endfor %}
+{% endif %}
+
+<h2>All content</h2>
 {% if not items %}
 <div class="card muted">No content yet.{% if current_user.role in ('creator', 'admin') %} Click "New submission" to start.{% endif %}</div>
 {% endif %}
