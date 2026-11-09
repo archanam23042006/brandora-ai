@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Log in | Brandora AI{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Brandora AI</h1>
+  <p class="muted">No content gets published without a Brand Passport.</p>
+
+  <h2>Try the demo (no sign-up needed)</h2>
+  <div class="demo-grid">
+    <a class="btn" href="{{ url_for('demo', role='creator') }}">Creator</a>
+    <a class="btn" href="{{ url_for('demo', role='reviewer') }}">Reviewer</a>
+    <a class="btn" href="{{ url_for('demo', role='manager') }}">Manager</a>
+    <a class="btn" href="{{ url_for('demo', role='admin') }}">Admin</a>
+  </div>
+
+  <h2>Or log in</h2>
+  <form method="post">
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <button class="btn primary" type="submit">Log in</button>
+  </form>
+  <p class="muted small">Demo accounts: creator@demo.com, reviewer@demo.com, manager@demo.com, admin@demo.com (password: demo123)</p>
+</div>
+{% endblock %}
