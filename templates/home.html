@@ -1,8 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="card">
-  <h1>Welcome, {{ current_user.name }}</h1>
-  <p>You are logged in as <b>{{ current_user.role }}</b>.</p>
-  <p class="muted">The content review screens come next.</p>
+  <div class="row">
+    <h1>Welcome, {{ current_user.name }}</h1>
+    {% if current_user.role in ('creator', 'admin') %}
+    <a class="btn primary auto" href="{{ url_for('submit') }}">+ New submission</a>
+    {% endif %}
+  </div>
+  <p>Logged in as <b>{{ current_user.role }}</b>.</p>
 </div>
+
+<h2>Content</h2>
+{% if not items %}
+<div class="card muted">No content yet.{% if current_user.role in ('creator', 'admin') %} Click "New submission" to start.{% endif %}</div>
+{% endif %}
+{% for i in items %}
+<a class="card item-link" href="{{ url_for('item', item_id=i.id) }}">
+  <div class="row">
+    <b>{{ i.title }}</b>
+    <span class="badge status">{{ i.status }}</span>
+  </div>
+  <span class="muted small">{{ i.content_type }} | by {{ i.creator_name }} | {{ i.created_at }}</span>
+</a>
+{% endfor %}
 {% endblock %}

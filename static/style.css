@@ -17,3 +17,30 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f4f7f7
 input, textarea, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #b8c4c2; border-radius: 8px; font-size: 15px; font-family: inherit; }
 .flash { background: #fff3b0; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; }
 .footer { text-align: center; font-size: 12px; color: #666; padding: 20px; }
+label { display: block; font-weight: bold; margin: 8px 0 4px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.auto { width: auto; }
+.back { display: inline-block; margin-bottom: 10px; color: #0f766e; text-decoration: none; }
+.badge { padding: 3px 10px; border-radius: 12px; font-size: 12px; background: #e0f2f1; color: #0f766e; }
+.content-box { white-space: pre-wrap; background: #f4f7f7; border: 1px solid #d5e0de; border-radius: 8px; padding: 14px; margin-top: 8px; }
+.chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-right: 6px; text-transform: capitalize; }
+.sev-critical { background: #fde2e2; color: #b91c1c; }
+.sev-major { background: #ffedd5; color: #b45309; }
+.sev-minor { background: #e0f2fe; color: #0369a1; }
+.finding { border-left: 6px solid #ccc; }
+.sev-border-critical { border-left-color: #b91c1c; }
+.sev-border-major { border-left-color: #b45309; }
+.sev-border-minor { border-left-color: #0369a1; }
+mark { background: #fff3b0; padding: 1px 4px; border-radius: 4px; }
+.fix { background: #eef6f5; padding: 10px; border-radius: 8px; }
+.item-link { display: block; text-decoration: none; color: inherit; }
+.item-link:hover { border-color: #0f766e; }
+.decide { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.decide select, .decide input { width: auto; flex: 1; min-width: 160px; margin-bottom: 0; }
+.decide .btn { white-space: nowrap; }
+.decided { background: #e0f2f1; color: #0f766e; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
+.version { padding: 8px 0; border-bottom: 1px solid #e5eceb; }
+.version:last-child { border-bottom: none; }
+html { scroll-behavior: smooth; }
+.finding, #revise { scroll-margin-top: 80px; }
+.error { background: #fde2e2; color: #b91c1c; padding: 8px 12px; border-radius: 8px; font-size: 14px; }

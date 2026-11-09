@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}New submission | Brandora AI{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Submit content for brand review</h1>
+  <p class="muted">Paste your text. It is checked against the approved guidelines, facts and terminology before publication.</p>
+  <form method="post">
+    <label>Title</label>
+    <input type="text" name="title" placeholder="e.g. Diwali Instagram post">
+    <label>Content type</label>
+    <select name="content_type">
+      <option>Social media post</option>
+      <option>Advertisement</option>
+      <option>Product description</option>
+      <option>Announcement</option>
+    </select>
+    <label>Content</label>
+    <textarea id="body" name="body" rows="8" placeholder="Paste your content here..." required></textarea>
+    <button type="button" class="btn" onclick="fillSample()">Use sample text</button>
+    <button class="btn primary" type="submit">Review content</button>
+  </form>
+</div>
+<script>
+function fillSample() {
+  document.getElementById("body").value =
+    "Nova Brew is India's No. 1 coffee shop! We GUARANTEE 100% happy customers. " +
+    "We have 60 cafes in 8 cities, founded in 2015. " +
+    "Our Cold Brew Classic is only Rs 149 and cures tiredness.";
+}
+</script>
+{% endblock %}

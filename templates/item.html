@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }} | Brandora AI{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('home') }}">&larr; All content</a>
+<div class="card">
+  <div class="row">
+    <h1>{{ item.title }}</h1>
+    <span class="badge status">{{ item.status }}</span>
+  </div>
+  <p class="muted small">{{ item.content_type }} | by {{ item.creator_name }} | Version {{ version.version_no }}</p>
+  <div class="content-box">{{ version.body }}</div>
+</div>
+
+<h2>Findings ({{ findings|length }})</h2>
+<p>
+  <span class="chip sev-critical">{{ counts.critical }} critical</span>
+  <span class="chip sev-major">{{ counts.major }} major</span>
+  <span class="chip sev-minor">{{ counts.minor }} minor</span>
+</p>
+
+{% if not findings %}
+<div class="card">No issues found in this version.</div>
+{% endif %}
+
+{% for f in findings %}
+<div class="card finding sev-border-{{ f.severity }}" id="finding-{{ f.id}}">
+  <div class="row">
+    <span class="chip sev-{{ f.severity }}">{{ f.severity }}</span>
+    <span class="muted small">{% if f.origin == 'ai' %}AI suggestion{% else %}Rule engine{% endif %}</span>
+  </div>
+  <p><b>Flagged:</b> <mark>{{ f.flagged_text }}</mark></p>
+  <p><b>Why:</b> {{ f.explanation }}</p>
+  <p><b>Rule:</b> {{ f.rule_id }}{% if f.rule_title %}: {{ f.rule_title }}{% endif %}</p>
+  <p class="fix"><b>Suggested fix:</b> {{ f.suggested_fix }}</p>
+
+  {% if f.decision_action %}
+  <p class="decided">
+    Decision:
+    {% if f.decision_action == 'accept' %}Accepted (will fix)
+    {% elif f.decision_action == 'ignore' %}Ignored: {{ f.decision_reason }}
+    {% else %}Human verification requested{% endif %}
+  </p>
+  {% endif %}
+
+  {% if can_edit %}
+  {% if request.args.get('err') == f.id|string %}
+  <p class="error">Please write a reason before ignoring this finding.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('decide', finding_id=f.id) }}" class="decide">
+    <select name="action">
+      <option value="accept" {% if f.decision_action == 'accept' %}selected{% endif %}>Accept: I will fix this</option>
+      <option value="ignore" {% if f.decision_action == 'ignore' %}selected{% endif %}>Ignore (reason needed)</option>
+      <option value="verify" {% if f.decision_action == 'verify' %}selected{% endif %}>Ask a human to verify</option>
+    </select>
+    <input type="text" name="reason" placeholder="Reason (required if ignoring)" value="{{ f.decision_reason or '' }}">
+    <button class="btn" type="submit">Save decision</button>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+
+{% if can_edit %}
+<div class="card" id="revise">
+  <h2>Revise your content</h2>
+  <p class="muted">Edit the text using the suggestions above. It is saved as a new version and checked again.</p>
+  <form method="post" action="{{ url_for('revise', item_id=item.id) }}">
+    <textarea name="body" rows="7" required>{{ version.body }}</textarea>
+    <button class="btn primary" type="submit">Save as new version and re-check</button>
+  </form>
+</div>
+{% endif %}
+
+<h2>Version history</h2>
+<div class="card">
+  {% for v in versions %}
+  <div class="row version">
+    <span><b>Version {{ v.version_no }}</b> by {{ v.author }}</span>
+    <span class="muted small">{{ v.finding_count }} findings | {{ v.created_at }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
