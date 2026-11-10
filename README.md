@@ -95,10 +95,13 @@ Open http://127.0.0.1:5000
 - Reviewer, manager and admin accounts are demo-only.
 - Rule checks are regex-based, so they can miss or wrongly flag some text. AI findings can also be wrong.
 
-## Planned for Round 3
-1. Image and accessibility review (OCR, contrast, alt text, colours)
-2. Brand learning: suggest rewrites for unclear rules, add trend charts, retrieval of relevant rules, and learn from reviewer decisions.
-3. Accuracy testing: a test set that measures detection accuracy, plus a "false flag" feedback button
+## Round 3: three major improvements
+
+| Improvement | What we will build |
+|---|---|
+| **Image and accessibility checks** | OCR to read text inside images, colour contrast checks, alt-text checks and brand colour checks |
+| **Smarter detection and brand learning** | TF-IDF retrieval to find the most relevant rules. An Admin screen to add, edit and upload guidelines, rules, facts and terms. Continuous brand learning from repeated ignores and "false flag" feedback |
+| **Reliability** | Testing with sample content, bug fixes and better error handling |
 
 ## Contribution
 Solo participant: Archana M built all parts (product, backend, database, AI integration, frontend, testing, deployment and documentation).
