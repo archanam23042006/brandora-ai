@@ -23,6 +23,30 @@ On the login page, click one of the 4 demo buttons: Creator, Reviewer, Manager, 
 8. **Brand Passport** page for each item: versions, findings, decisions, reviewer notes, approvals, AI-use disclosure and final status. It can be printed.
 9. **Brand Memory (Insights)** page for reviewer, manager and admin: most flagged rules, most ignored or escalated rules (possible unclear guidelines), reviewer outcomes.
 
+## Completed features (Round 2)
+1. Login with hashed passwords, 4 roles (Creator, Reviewer, Manager, Admin) and one-click demo accounts
+2. Brand Vault seed data for fictional NovaBrew: 9 numbered rules, approved facts, terminology, evidence entries
+3. Text submission with Version 1 saved and a new version on every revision
+4. Rule engine: banned terms, risky claims, ALL CAPS, repeated "!", fact and number mismatches, long sentences
+5. AI review (Groq) for tone, explanation and suggested fix. AI findings are kept only if they cite a real rule and quote the text exactly.
+6. AI-assisted rewrite (creator only), checked by our rule engine before it is shown
+7. Email and phone masking, AI cache by content hash, rule-based fallback if AI fails
+8. Findings screen with flagged text, reason, rule ID, severity, confidence and suggested fix
+9. Creator decisions: Accept, Ignore with reason, Ask reviewer for exception (critical findings cannot be ignored alone)
+10. Reviewer queue and manager decision (Approve, Request changes, Reject)
+11. Status tracking, approval history and version history
+12. Printable Brand Passport per item, with AI-use disclosure
+13. Brand Memory (Insights) tables: most-flagged rules, most-ignored or escalated rules, reviewer outcomes
+14. Live deployment on Render with 3 hand-written sample items
+
+## Changes from the original plan
+- Brand Vault is loaded from seed data for fictional NovaBrew. The admin upload and edit screen is deferred to Round 3.
+- TF-IDF retrieval and evidence-ledger checks are deferred to Round 3. In Round 2 the rule engine does the reliable checks and the AI is given the Brand Vault rules.
+- Added one-click demo login so judges can use the product without sign-in help.
+- Added a reviewer queue: critical findings cannot be ignored by the creator alone.
+- Added AI-assisted rewrite, checked by our rule engine before it is shown.
+- Brand Passport and Brand Memory were built in Round 2, earlier than planned (Brand Memory is table-based).
+
 ## Architecture
 - `app.py`: Flask routes, roles and login checks, workflow helpers
 - `database.py`: SQLite schema
@@ -73,5 +97,8 @@ Open http://127.0.0.1:5000
 
 ## Planned for Round 3
 1. Image and accessibility review (OCR, contrast, alt text, colours)
-2. Brand learning: a deeper dashboard that finds repeated mistakes and unclear guidelines (an early version is the Insights page)
+2. Brand learning: suggest rewrites for unclear rules, add trend charts, retrieval of relevant rules, and learn from reviewer decisions.
 3. Accuracy testing: a test set that measures detection accuracy, plus a "false flag" feedback button
+
+## Contribution
+Solo participant: Archana M built all parts (product, backend, database, AI integration, frontend, testing, deployment and documentation).
