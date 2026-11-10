@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Brand Memory{% endblock %}
+{% block content %}
+<div class="insights">
+<h1>Brand Memory</h1>
+<p>Repeated issues and unclear-guideline signals across all content.</p>
+
+<h2>1. Most flagged rules</h2>
+<table>
+  <tr><th>Rule</th><th>Name</th><th>Times flagged</th><th>Items affected</th></tr>
+  {% for r in flagged %}
+  <tr>
+    <td>{{ r.rule_id or "-" }}</td>
+    <td>{{ r.title or "-" }}</td>
+    <td>{{ r.times }}</td>
+    <td>{{ r.items }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4">No data yet. Submit some content first.</td></tr>
+  {% endfor %}
+</table>
+
+<h2>2. Most ignored or escalated rules (possible unclear guideline)</h2>
+<table>
+  <tr><th>Rule</th><th>Decisions</th><th>Accepted</th><th>Pushed back</th><th>Pushed back %</th></tr>
+  {% for r in pushback %}
+  <tr>
+    <td>{{ r.rule_id or "-" }}</td>
+    <td>{{ r.total }}</td>
+    <td>{{ r.accepted }}</td>
+    <td>{{ r.pushed_back }}</td>
+    <td>{{ (100 * r.pushed_back / r.total) | round | int }}%</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">No creator decisions yet.</td></tr>
+  {% endfor %}
+</table>
+<p><small>A high pushed-back % means creators often disagree with this rule. The guideline may be unclear and need a rewrite.</small></p>
+
+<h2>3. Reviewer outcomes by rule</h2>
+<table>
+  <tr><th>Rule</th><th>Outcome</th><th>Count</th></tr>
+  {% for r in reviewer %}
+  <tr><td>{{ r.rule_id or "-" }}</td><td>{{ r.outcome }}</td><td>{{ r.cnt }}</td></tr>
+  {% else %}
+  <tr><td colspan="3">No reviewer decisions yet.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

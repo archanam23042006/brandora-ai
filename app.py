@@ -553,6 +553,30 @@ def passport(item_id):
     return render_template("passport.html", item=it, version=version, findings=findings,
                            versions=versions, history=history, ai_used=ai_used)
 
+@app.route("/insights")
+@login_required
+def insights():
+    if current_user.role not in ("manager", "admin", "reviewer"):
+        abort(403)
+    conn = get_db()
+    flagged = conn.execute(
+        "SELECT f.rule_id, r.title, COUNT(*) AS times, "
+        "COUNT(DISTINCT f.item_id) AS items "
+        "FROM findings f LEFT JOIN rules r ON r.id = f.rule_id "
+        "GROUP BY f.rule_id ORDER BY times DESC").fetchall()
+    pushback = conn.execute(
+        "SELECT f.rule_id, COUNT(*) AS total, "
+        "SUM(CASE WHEN lower(d.action) LIKE '%accept%' THEN 1 ELSE 0 END) AS accepted, "
+        "SUM(CASE WHEN lower(d.action) NOT LIKE '%accept%' THEN 1 ELSE 0 END) AS pushed_back "
+        "FROM decisions d JOIN findings f ON f.id = d.finding_id "
+        "GROUP BY f.rule_id ORDER BY pushed_back DESC").fetchall()
+    reviewer = conn.execute(
+        "SELECT rule_id, outcome, COUNT(*) AS cnt FROM reviewer_decisions "
+        "GROUP BY rule_id, outcome ORDER BY cnt DESC").fetchall()
+    conn.close()
+    return render_template("insights.html", flagged=flagged,
+                           pushback=pushback, reviewer=reviewer)
+    
 seed()  # creates tables and sample data if the database is empty
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@
     {% if current_user.is_authenticated %}
     <nav>
       <span class="who">{{ current_user.name }} <em>{{ current_user.role }}</em></span>
+      {% if current_user.role in ['manager','admin','reviewer'] %}<a href="{{ url_for('insights') }}">Insights</a>{% endif %}
       <a href="{{ url_for('logout') }}">Log out</a>
     </nav>
     {% endif %}

@@ -79,3 +79,39 @@ html { scroll-behavior: smooth; }
   body { background: #fff; }
   .card { break-inside: avoid; }
 }
+.insights table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 20px;
+  background: #fff;
+  border: 1px solid #d9dee5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.insights th {
+  background: #1f3a5f;
+  color: #fff;
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.insights td {
+  padding: 9px 12px;
+  border-top: 1px solid #e6e9ee;
+  font-size: 14px;
+}
+.insights tr:nth-child(even) td {
+  background: #f6f8fb;
+}
+.insights tr:hover td {
+  background: #eaf1fb;
+}
+.insights h2 {
+  margin-top: 24px;
+}
+@media (max-width: 700px) {
+  .insights table {
+    display: block;
+    overflow-x: auto;
+  }
+}
