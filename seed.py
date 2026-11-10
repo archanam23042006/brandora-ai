@@ -87,6 +87,98 @@ def seed():
           conn.execute("SELECT COUNT(*) FROM evidence_ledger").fetchone()[0], "evidence")
     conn.close()
 
+def seed_samples():
+    """3 sample items so the demo is never empty. Hand-written, no AI calls."""
+    conn = get_db()
+    if conn.execute("SELECT COUNT(*) FROM content_items").fetchone()[0] > 0:
+        conn.close()
+        return
+    uid = {r["role"]: r["id"] for r in conn.execute("SELECT id, role FROM users")}
+    creator, reviewer, manager = uid["creator"], uid["reviewer"], uid["manager"]
+
+    def make_item(title, status, bodies):
+        cur = conn.execute(
+            "INSERT INTO content_items (title, content_type, creator_id, status) VALUES (?,?,?,?)",
+            (title, "Social media post", creator, status))
+        item_id = cur.lastrowid
+        vids = []
+        for n, body in enumerate(bodies, 1):
+            c = conn.execute(
+                "INSERT INTO content_versions (item_id, version_no, body, changed_by) VALUES (?,?,?,?)",
+                (item_id, n, body, creator))
+            vids.append(c.lastrowid)
+        return item_id, vids
+
+    def add_finding(item_id, vid, rule_id, text, why, sev, fix, action=None, reason=""):
+        c = conn.execute(
+            "INSERT INTO findings (item_id, version_id, rule_id, origin, flagged_text, "
+            "explanation, severity, suggested_fix) VALUES (?,?,?,?,?,?,?,?)",
+            (item_id, vid, rule_id, "rule", text, why, sev, fix))
+        if action:
+            conn.execute(
+                "INSERT INTO decisions (finding_id, user_id, action, reason) VALUES (?,?,?,?)",
+                (c.lastrowid, creator, action, reason))
+
+    def add_approval(item_id, user, decision, note):
+        conn.execute(
+            "INSERT INTO approvals (item_id, user_id, decision, note) VALUES (?,?,?,?)",
+            (item_id, user, decision, note))
+
+    # 1) APPROVED: fixed in version 2
+    i1, v1 = make_item("[Sample] Cold Brew launch post", "Approved", [
+        "Try the best coffee in India. Our customers love Cold Brew Classic.",
+        "Try our Cold Brew Classic at Rs 199. Our guests love it."])
+    add_finding(i1, v1[0], "CLAIM-01", "the best coffee in India",
+                "Ranking claim is not in the approved evidence ledger.", "critical",
+                "Remove the ranking claim.", "accept")
+    add_finding(i1, v1[0], "TERM-02", "customers",
+                "Brand vocabulary says to use 'guests'.", "minor",
+                "Use 'guests'.", "accept")
+    add_approval(i1, creator, "submitted", "Version 2 submitted.")
+    add_approval(i1, manager, "approve", "Clean and factual. Approved.")
+
+    # 2) PENDING REVIEW: waiting for the reviewer
+    i2, v2 = make_item("[Sample] Wellness cold brew promo", "Pending Review", [
+        "Boost your day with NovaBrew! Our cold brew boosts immunity and is healthy for everyone!!"])
+    add_finding(i2, v2[0], "CLAIM-03", "boosts immunity",
+                "Health claims are not allowed.", "critical",
+                "Remove the health claim.", "verify",
+                "Our nutrition partner says this is true. Please check.")
+    add_finding(i2, v2[0], "TONE-02", "!!",
+                "Avoid more than one exclamation mark in a row.", "minor",
+                "Use a single '!'.", "ignore", "Small style issue for a festival post.")
+    add_approval(i2, creator, "submitted", "Version 1 submitted.")
+
+    # 3) CHANGES REQUESTED: reviewer said must fix
+    i3, v3 = make_item("[Sample] Expansion announcement", "Changes Requested", [
+        "NovaBrew has 60 cafes in 8 cities. We are guaranteed to be your favourite."])
+    add_finding(i3, v3[0], "FACT-01", "60 cafes",
+                "Approved facts say NovaBrew has 45 cafes.", "major",
+                "Use 45 cafes.", "accept")
+    add_finding(i3, v3[0], "CLAIM-02", "guaranteed",
+                "Absolute guarantees are not allowed.", "critical",
+                "Remove 'guaranteed'.", "verify",
+                "We want a strong promise in this post.")
+    conn.execute(
+        "INSERT INTO reviewer_decisions (item_id, rule_id, flagged_text, reviewer_id, outcome, note) "
+        "VALUES (?,?,?,?,?,?)",
+        (i3, "CLAIM-02", "guaranteed", reviewer, "must_fix",
+         "We cannot promise this. Please reword."))
+    add_approval(i3, creator, "submitted", "Version 1 submitted.")
+    add_approval(i3, reviewer, "sent_back",
+                 "Some findings must be fixed. See the notes on each finding.")
+
+    conn.commit()
+    conn.close()
+    print("Sample items added.")
+
+
+_seed_base = seed
+
+
+def seed():
+    _seed_base()
+    seed_samples()
 
 if __name__ == "__main__":
     seed()
