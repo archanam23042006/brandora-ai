@@ -1,4 +1,6 @@
 import os
+import re
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from flask import (Flask, render_template, request, redirect, url_for,
                    flash, abort)
@@ -44,7 +46,21 @@ class User(UserMixin):
         self.email = row["email"]
         self.role = row["role"]
 
-
+@app.template_filter("ist")
+def to_ist(value):
+    if not value:
+        return ""
+    try:
+        dt = datetime.strptime(str(value)[:19], "%Y-%m-%d %H:%M:%S") + timedelta(hours=5, minutes=30)
+        return dt.strftime("%d %b %Y, %I:%M %p")
+    except ValueError:
+        return str(value)
+@app.template_filter("status_class")
+def status_class(status):
+    return {"Approved": "st-approved", "Rejected": "st-rejected",
+            "Changes Requested": "st-changes", "Pending Review": "st-pending",
+            "Ready for Approval": "st-ready", "In Review": "st-review"}.get(status, "st-review")
+   
 @login_manager.user_loader
 def load_user(user_id):
     conn = get_db()
@@ -265,12 +281,15 @@ def submit():
         flash("Only creators can submit content. Log in as Creator to try it.")
         return redirect(url_for("home"))
     if request.method == "POST":
-        title = request.form.get("title", "").strip() or "Untitled content"
+        title = request.form.get("title", "").strip()
         content_type = request.form.get("content_type", "Social media post")
         body = request.form.get("body", "").strip()
+        if len(re.findall(r"[A-Za-z0-9]", title)) < 3:
+            flash("Please write a proper title (at least 3 letters or numbers).")
+            return render_template("submit.html", title=title, body=body)
         if not body:
             flash("Please paste some content to review.")
-            return redirect(url_for("submit"))
+            return render_template("submit.html", title=title, body=body)
         item_id = create_submission(current_user.id, title, content_type, body)
         return redirect(url_for("item", item_id=item_id))
     return render_template("submit.html")

@@ -31,9 +31,9 @@
 <a class="card item-link" href="{{ url_for('item', item_id=i.id) }}">
   <div class="row">
     <b>{{ i.title }}</b>
-    <span class="badge status">{{ i.status }}</span>
+    <span class="badge {{ i.status|status_class }}">{{ i.status }}</span>
   </div>
-  <span class="muted small">{{ i.content_type }} | by {{ i.creator_name }} | {{ i.created_at }}</span>
+  <span class="muted small">{{ i.content_type }} | by {{ i.creator_name }} | {{ i.created_at|ist }}</span>
 </a>
 {% endfor %}
 {% endblock %}

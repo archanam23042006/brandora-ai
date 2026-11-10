@@ -58,3 +58,11 @@ html { scroll-behavior: smooth; }
 .decide-form label { margin-top: 0; }
 .hint { background: #f4f7f7; color: #444; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin: 0 0 10px; }
 .reason-wrap { margin-bottom: 4px; }
+.badge.st-approved { background: #d1fae5; color: #047857; }
+.badge.st-rejected { background: #fde2e2; color: #b91c1c; }
+.badge.st-changes { background: #ffedd5; color: #b45309; }
+.badge.st-pending { background: #fff3b0; color: #7a5b00; }
+.badge.st-ready { background: #e0f2fe; color: #0369a1; }
+.badge.st-review { background: #e5eceb; color: #555; }
+.step.now.rejected { background: #b91c1c; }
+.next-box.rejected { border-left-color: #b91c1c; background: #fde2e2; }

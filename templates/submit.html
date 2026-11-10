@@ -6,7 +6,7 @@
   <p class="muted">Paste your text. It is checked against the approved guidelines, facts and terminology before publication.</p>
   <form method="post">
     <label>Title</label>
-    <input type="text" name="title" placeholder="e.g. Diwali Instagram post">
+    <input type="text" name="title" placeholder="e.g. Diwali Instagram post" value="{{ title or '' }}" required>
     <label>Content type</label>
     <select name="content_type">
       <option>Social media post</option>
@@ -15,7 +15,7 @@
       <option>Announcement</option>
     </select>
     <label>Content</label>
-    <textarea id="body" name="body" rows="8" placeholder="Paste your content here..." required></textarea>
+    <textarea id="body" name="body" rows="8" placeholder="Paste your content here..." required>{{ body or '' }}</textarea>
     <button type="button" class="btn" onclick="fillSample()">Use sample text</button>
     <button class="btn primary" type="submit">Review content</button>
   </form>

@@ -4,16 +4,16 @@
 <a class="back" href="{{ url_for('home') }}">&larr; All content</a>
 <div class="stepper">
   {% for s in stages %}
-  <div class="step {% if loop.index0 < stage %}done{% elif loop.index0 == stage %}now{% endif %}">{{ s }}</div>
+  <div class="step {% if loop.index0 < stage %}done{% elif loop.index0 == stage %}now{% if item.status == 'Rejected' %} rejected{% endif %}{% endif %}">{{ s }}</div>
   {% endfor %}
 </div>
 {% if next_msg %}
-<div class="next-box"><b>What to do now:</b> {{ next_msg }}</div>
+<div class="next-box{% if item.status == 'Rejected' %} rejected{% endif %}"></div><b>What to do now:</b> {{ next_msg }}</div>
 {% endif %}
 <div class="card">
   <div class="row">
     <h1>{{ item.title }}</h1>
-    <span class="badge status">{{ item.status }}</span>
+    <span class="badge {{ item.status|status_class }}">{{ item.status }}</span>
   </div>
   <p class="muted small">{{ item.content_type }} | by {{ item.creator_name }} | Version {{ version.version_no }}</p>
   <div class="content-box">{{ version.body }}</div>
@@ -135,7 +135,7 @@
   {% for h in history %}
   <div class="version">
     <b>{{ h.user_name }}</b> ({{ h.user_role }}) {{ h.label }}
-    <span class="muted small">| {{ h.created_at }}</span>
+    <span class="muted small">| {{ h.created_at| ist }}</span>
     {% if h.note %}<div class="muted small">{{ h.note }}</div>{% endif %}
   </div>
   {% endfor %}
@@ -146,7 +146,7 @@
   {% for v in versions %}
   <div class="row version">
     <span><b>Version {{ v.version_no }}</b> by {{ v.author }}</span>
-    <span class="muted small">{{ v.finding_count }} findings | {{ v.created_at }}</span>
+    <span class="muted small">{{ v.finding_count }} findings | {{ v.created_at| ist }}</span>
   </div>
   {% endfor %}
 </div>
