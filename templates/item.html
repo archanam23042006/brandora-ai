@@ -16,6 +16,7 @@
     <span class="badge {{ item.status|status_class }}">{{ item.status }}</span>
   </div>
   <p class="muted small">{{ item.content_type }} | by {{ item.creator_name }} | Version {{ version.version_no }}</p>
+  <a class="btn auto" href="{{ url_for('passport', item_id=item.id) }}">View Brand Passport</a>
   <div class="content-box">{{ version.body }}</div>
 </div>
 

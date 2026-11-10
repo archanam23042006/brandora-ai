@@ -519,6 +519,39 @@ def approval(item_id):
     flash(f"Status: {status}")
     return redirect(url_for("item", item_id=item_id))
 
+@app.route("/item/<int:item_id>/passport")
+@login_required
+def passport(item_id):
+    conn = get_db()
+    it = conn.execute(
+        "SELECT ci.*, u.name AS creator_name FROM content_items ci "
+        "JOIN users u ON u.id = ci.creator_id WHERE ci.id = ?", (item_id,)).fetchone()
+    if not it:
+        conn.close()
+        abort(404)
+    if current_user.role == "creator" and it["creator_id"] != current_user.id:
+        conn.close()
+        abort(403)
+    version = latest_version(conn, item_id)
+    findings = load_findings(conn, item_id, version["id"])
+    versions = conn.execute(
+        "SELECT v.version_no, v.body, v.created_at, u.name AS author, "
+        "(SELECT COUNT(*) FROM findings WHERE version_id = v.id) AS finding_count "
+        "FROM content_versions v LEFT JOIN users u ON u.id = v.changed_by "
+        "WHERE v.item_id = ? ORDER BY v.version_no DESC", (item_id,)).fetchall()
+    hist_rows = conn.execute(
+        "SELECT a.*, u.name AS user_name, u.role AS user_role FROM approvals a "
+        "JOIN users u ON u.id = a.user_id WHERE a.item_id = ? ORDER BY a.id ASC",
+        (item_id,)).fetchall()
+    conn.close()
+    history = []
+    for h in hist_rows:
+        d = dict(h)
+        d["label"] = HISTORY_LABELS.get(h["decision"], h["decision"])
+        history.append(d)
+    ai_used = any(f["origin"] == "ai" for f in findings)
+    return render_template("passport.html", item=it, version=version, findings=findings,
+                           versions=versions, history=history, ai_used=ai_used)
 
 seed()  # creates tables and sample data if the database is empty
 

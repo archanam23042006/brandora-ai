@@ -69,3 +69,13 @@ html { scroll-behavior: smooth; }
 .ai-box { border-left: 6px solid #7c3aed; }
 .ai-box .btn { margin-top: 8px; }
 .ai-note { border-left: 6px solid #7c3aed; }
+.passport { border-top: 6px solid #0f766e; }
+.verdict { padding: 10px 14px; border-radius: 8px; margin: 12px 0 0; font-weight: bold; }
+.verdict.ok { background: #d1fae5; color: #047857; }
+.verdict.no { background: #fff3b0; color: #7a5b00; }
+.small-box { font-size: 13px; margin-top: 6px; }
+@media print {
+  .topbar, .no-print, .footer { display: none; }
+  body { background: #fff; }
+  .card { break-inside: avoid; }
+}

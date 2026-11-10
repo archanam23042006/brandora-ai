@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Brand Passport | {{ item.title }}{% endblock %}
+{% block content %}
+<div class="no-print">
+  <a class="back" href="{{ url_for('item', item_id=item.id) }}">&larr; Back to content</a>
+  <button class="btn auto" type="button" onclick="window.print()">Print / Save as PDF</button>
+</div>
+
+<div class="card passport">
+  <div class="row">
+    <div>
+      <div class="muted small">BRAND PASSPORT</div>
+      <h1>{{ item.title }}</h1>
+      <div class="muted small">ID BP-{{ '%04d'|format(item.id) }} | {{ item.content_type }} | by {{ item.creator_name }} | created {{ item.created_at|ist }}</div>
+    </div>
+    <span class="badge {{ item.status|status_class }}">{{ item.status }}</span>
+  </div>
+  {% if item.status == 'Approved' %}
+  <p class="verdict ok">Cleared for publication: reviewed by the rule engine and approved by a manager.</p>
+  {% else %}
+  <p class="verdict no">Not yet cleared for publication. Current status: {{ item.status }}.</p>
+  {% endif %}
+</div>
+
+<h2>Content (latest version {{ version.version_no }})</h2>
+<div class="card"><div class="content-box">{{ version.body }}</div></div>
+
+<h2>Findings and decisions ({{ findings|length }})</h2>
+{% if not findings %}<div class="card">No issues found in the latest version.</div>{% endif %}
+{% for f in findings %}
+<div class="card finding sev-border-{{ f.severity }}">
+  <span class="chip sev-{{ f.severity }}">{{ f.severity }}</span>
+  <span class="muted small">{{ f.rule_id }}{% if f.rule_title %}: {{ f.rule_title }}{% endif %} | {% if f.origin == 'ai' %}AI suggestion{% else %}Rule engine{% endif %}</span>
+  <p><b>Flagged:</b> <mark>{{ f.flagged_text }}</mark></p>
+  <p><b>Why:</b> {{ f.explanation }}</p>
+  <p class="fix"><b>Suggested fix:</b> {{ f.suggested_fix }}</p>
+  <p class="decided state-{{ f.state }}">
+    {% if f.state == 'open' %}No decision yet
+    {% elif f.state == 'accepted' %}Accepted by the creator
+    {% elif f.state == 'ignored' %}Ignored by the creator: {{ f.decision_reason }}
+    {% elif f.state == 'waiting' %}Waiting for a reviewer: {{ f.decision_reason }}
+    {% elif f.state == 'allowed' %}Exception approved by {{ f.reviewer_name }}{% if f.review_note %}: {{ f.review_note }}{% endif %}
+    {% else %}Reviewer says MUST FIX ({{ f.reviewer_name }}): {{ f.review_note }}{% endif %}
+  </p>
+</div>
+{% endfor %}
+
+<h2>Approval trail</h2>
+<div class="card">
+  {% if not history %}<p class="muted">No approval activity yet.</p>{% endif %}
+  {% for h in history %}
+  <div class="version">
+    <b>{{ h.user_name }}</b> ({{ h.user_role }}) {{ h.label }}
+    <span class="muted small">| {{ h.created_at|ist }}</span>
+    {% if h.note %}<div class="muted small">{{ h.note }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Revision history</h2>
+<div class="card">
+  {% for v in versions %}
+  <div class="version">
+    <b>Version {{ v.version_no }}</b> by {{ v.author }}
+    <span class="muted small">| {{ v.finding_count }} findings | {{ v.created_at|ist }}</span>
+    <div class="content-box small-box">{{ v.body }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>AI use disclosure</h2>
+<div class="card muted small">
+  Content is checked by a rule engine (fixed rules, no AI) and by an AI model (Groq) for tone and rewrites.
+  {% if ai_used %}This item has findings labelled "AI suggestion".{% else %}No AI-labelled findings were produced for this item.{% endif %}
+  Emails and phone numbers are hidden before text is sent to the AI service. AI output is advice only; people make every final decision.
+  Demo data is fictional (NovaBrew).
+</div>
+{% endblock %}
