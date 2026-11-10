@@ -19,6 +19,33 @@
   <div class="content-box">{{ version.body }}</div>
 </div>
 
+{% if can_edit %}
+<div class="card ai-box">
+  <b>AI-assisted review</b>
+  {% if ai_ok and ai_rewrite %}
+    <p class="muted small">Suggested rewrite that fixes the issues and keeps your original purpose. It was checked against the brand rules before being shown. It is advice only; you decide.</p>
+    <div class="content-box" id="ai-rewrite">{{ ai_rewrite }}</div>
+    <button type="button" class="btn" onclick="useRewrite()">Copy into the revise box</button>
+  {% elif ai_ok %}
+    <p class="muted small">No full rewrite is available for this version. Use the suggested fix on each finding.</p>
+  {% else %}
+    <p class="muted small">AI suggestions were not available for this version, so only the rule engine ran.</p>
+  {% endif %}
+  <p class="muted small">AI use: the text is reviewed by the rule engine and by an AI model (Groq). Emails and phone numbers are hidden before sending. The AI only suggests; people make the final decisions.</p>
+</div>
+{% elif findings|selectattr('origin', 'equalto', 'ai')|list %}
+<p class="muted small">Findings labelled "AI suggestion" were produced by an AI model (Groq). They are advice only; people make the final decision.</p>
+{% endif %}
+
+<script>
+function useRewrite() {
+  var box = document.querySelector('#revise textarea');
+  if (!box) return;
+  box.value = document.getElementById('ai-rewrite').textContent.trim();
+  document.getElementById('revise').scrollIntoView({behavior: 'smooth'});
+}
+</script>
+
 <h2>Findings ({{ findings|length }})</h2>
 <p>
   <span class="chip sev-critical">{{ counts.critical }} critical</span>

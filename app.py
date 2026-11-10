@@ -11,6 +11,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from database import get_db
 from seed import seed
 from review import create_submission, add_version
+from ai_review import get_cached 
 
 load_dotenv()
 
@@ -329,6 +330,9 @@ def item(item_id):
     for f in findings:
         counts[f["severity"]] = counts.get(f["severity"], 0) + 1
     waiting_count = sum(1 for f in findings if f["state"] == "waiting")
+    ai_data = get_cached(version["body"])
+    ai_ok = ai_data is not None
+    ai_rewrite = (ai_data or {}).get("rewrite", "")
     role = current_user.role
     can_review = role in ("reviewer", "admin") and it["status"] == "Pending Review"
     can_approve = role in ("manager", "admin") and it["status"] == "Ready for Approval"
@@ -337,7 +341,8 @@ def item(item_id):
                            can_edit=can_edit_item(it), can_review=can_review,
                            can_approve=can_approve, waiting_count=waiting_count,
                            stages=STAGES, stage=stage_of(it["status"]),
-                           next_msg=next_message(it["status"], role))
+                           next_msg=next_message(it["status"], role),
+                           ai_ok=ai_ok, ai_rewrite=ai_rewrite)
 
 
 @app.route("/finding/<int:finding_id>/decide", methods=["POST"])

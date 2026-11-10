@@ -66,3 +66,6 @@ html { scroll-behavior: smooth; }
 .badge.st-review { background: #e5eceb; color: #555; }
 .step.now.rejected { background: #b91c1c; }
 .next-box.rejected { border-left-color: #b91c1c; background: #fde2e2; }
+.ai-box { border-left: 6px solid #7c3aed; }
+.ai-box .btn { margin-top: 8px; }
+.ai-note { border-left: 6px solid #7c3aed; }
