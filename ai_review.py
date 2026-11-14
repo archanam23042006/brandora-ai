@@ -14,6 +14,7 @@ Rules for your answer:
 - If the content already follows the rules, return an empty findings list.
 - rule_id must be one of the provided rule IDs. flagged_text must be copied EXACTLY from the content.
 - Do not repeat anything in "already_found".
+- Claims listed in "approved_claims" are supported by evidence. Do not flag them.
 - explanation: one or two simple sentences saying why, naming the rule.
 - suggested_fix: replacement wording that keeps the creator's intent.
 - rewrite: the full content rewritten to fix ALL issues (including already_found) while keeping the creator's purpose.
@@ -26,10 +27,20 @@ REPAIR = """You fix a brand rewrite. Reply ONLY with JSON: {"rewrite":"..."}
 Rewrite the text so that it no longer has any of the listed problems, keeps the same purpose, uses only the
 approved_facts for any numbers, and follows the provided rules. Use preferred terms from banned_terms."""
 
+def rules_digest():
+    """Changes whenever the admin edits rules, terms, facts or evidence."""
+    conn = get_db()
+    parts = []
+    for table in ("rules", "terminology", "approved_facts", "evidence_ledger"):
+        rows = [tuple(r) for r in conn.execute(f"SELECT * FROM {table} ORDER BY 1")]
+        parts.append(json.dumps(rows, default=str))
+    conn.close()
+    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:16]
 
 def content_hash(body):
-    return hashlib.sha256((CACHE_VERSION + "|" + mask_sensitive(body)).encode("utf-8")).hexdigest()
-
+    return hashlib.sha256(
+        (CACHE_VERSION + "|" + rules_digest() + "|" + mask_sensitive(body)).encode("utf-8")
+    ).hexdigest()
 
 def get_cached(body):
     conn = get_db()
@@ -85,10 +96,12 @@ def run_ai_review(body, rule_findings):
     conn = get_db()
     rules = [dict(r) for r in conn.execute("SELECT id, title, text FROM rules")]
     facts = [r["fact"] for r in conn.execute("SELECT fact FROM approved_facts")]
+    claims = [r["claim"] for r in conn.execute("SELECT claim FROM evidence_ledger")]
     terms = [dict(r) for r in conn.execute("SELECT banned, preferred FROM terminology")]
     conn.close()
     already = [{"rule_id": f["rule_id"], "flagged_text": f["flagged_text"]} for f in rule_findings]
-    context = {"rules": rules, "approved_facts": facts, "banned_terms": terms}
+    context = {"rules": rules, "approved_facts": facts, "banned_terms": terms,
+               "approved_claims": claims}
     payload = dict(context)
     payload["content"] = mask_sensitive(body)
     payload["already_found"] = already

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Admin | Brandora AI{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Brand Vault admin</h1>
+  <p class="muted">Manage the approved guidelines. Changes apply to the next review. Banned terms are enforced by the rule engine straight away. Rules, facts and evidence are also given to the AI review.</p>
+</div>
+
+<div class="card try-box">
+  <b>Quick try (2 minutes)</b>
+  <ol>
+    <li>Press <b>Use example</b> in any form below, then press the Add button.</li>
+    <li>Log out, click <b>Creator</b>, and submit: <i>Our cheapest tea is ready.</i></li>
+    <li>You should see "cheapest" flagged with the rule and a suggested replacement.</li>
+  </ol>
+  <span class="muted small">The pre-loaded rules, terms, facts and evidence below are fictional NovaBrew sample data.</span>
+</div>
+
+<h2 id="rules">Rules ({{ rules|length }})</h2>
+<div class="card">
+  <b>{% if edit_rule %}Edit rule {{ edit_rule.id }}{% else %}Add a rule{% endif %}</b>
+  <form method="post" action="{{ url_for('admin_rule') }}" class="admin-form">
+    <div class="grid2">
+      <input name="id" placeholder="Rule ID, e.g. TONE-03" value="{{ edit_rule.id if edit_rule else '' }}" {% if edit_rule %}readonly{% endif %} required>
+      <input name="category" placeholder="Category, e.g. Tone" value="{{ edit_rule.category if edit_rule else '' }}" required>
+    </div>
+    <input name="title" placeholder="Short title" value="{{ edit_rule.title if edit_rule else '' }}" required>
+    <textarea name="text" rows="3" placeholder="The rule, in plain words" required>{{ edit_rule.text if edit_rule else '' }}</textarea>
+    <select name="severity">
+      {% for s in ['critical', 'major', 'minor'] %}
+      {% set pick = (edit_rule and edit_rule.severity == s) or (not edit_rule and s == 'major') %}
+      <option value="{{ s }}" {{ 'selected' if pick else '' }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn primary auto" type="submit">
+    {% if edit_rule %}Save changes{% else %}Add rule{% endif %}</button>
+    {% if not edit_rule %}<button type="button" class="btn auto" onclick="fillRule()">Use example</button>{% endif %}
+    {% if edit_rule %}<a class="btn auto" href="{{ url_for('admin') }}">Cancel</a>{% endif %}
+  </form>
+</div>
+{% for r in rules %}
+<div class="card admin-row">
+  <div class="row">
+    <b>{{ r.id }}: {{ r.title }}</b>
+    <span class="chip sev-{{ r.severity }}">{{ r.severity }}</span>
+  </div>
+  <p class="muted small">{{ r.category }} | version {{ r.version }}{% if r.id in protected %} | built-in detector{% endif %}</p>
+  <p>{{ r.text }}</p>
+  <div class="decide">
+    <a class="btn auto small" href="{{ url_for('admin', edit=r.id) }}#rules">Edit</a>
+    <form method="post" action="{{ url_for('admin_rule_delete', rule_id=r.id) }}">
+      <button class="btn auto small danger" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+
+<h2 id="terms">Banned terms ({{ terms|length }})</h2>
+<div class="card">
+  <form method="post" action="{{ url_for('admin_term') }}" class="admin-form">
+    <div class="grid2">
+      <input name="banned" placeholder="Banned word or phrase" required>
+      <input name="preferred" placeholder="Use this instead" required>
+    </div>
+    <select name="rule_id">
+      {% for r in rules %}<option value="{{ r.id }}" {% if r.id == 'TERM-02' %}selected{% endif %}>{{ r.id }}: {{ r.title }}</option>{% endfor %}
+    </select>
+    <button class="btn primary auto" type="submit">Add term</button>
+    <button type="button" class="btn auto" onclick="fillTerm()">Use example</button>
+  </form>
+</div>
+{% for t in terms %}
+<div class="card admin-row">
+  <div class="row">
+    <span>"{{ t.banned }}" &rarr; "{{ t.preferred }}" <span class="muted small">({{ t.rule_id }})</span></span>
+    <form method="post" action="{{ url_for('admin_delete', kind='term', row_id=t.id) }}">
+      <button class="btn auto small danger" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+
+<h2 id="facts">Approved facts ({{ facts|length }})</h2>
+<div class="card">
+  <form method="post" action="{{ url_for('admin_fact') }}" class="admin-form">
+    <input name="topic" placeholder="Topic, e.g. cafes" required>
+    <input name="fact" placeholder="The approved fact, e.g. NovaBrew has 45 cafes." required>
+    <input name="source" placeholder="Source, e.g. Company Fact Sheet 2026" required>
+    <button class="btn primary auto" type="submit">Add fact</button>
+    <button type="button" class="btn auto" onclick="fillFact()">Use example</button>
+  </form>
+</div>
+{% for f in facts %}
+<div class="card admin-row">
+  <div class="row">
+    <span><b>{{ f.topic }}:</b> {{ f.fact }} <span class="muted small">(Source: {{ f.source }})</span></span>
+    <form method="post" action="{{ url_for('admin_delete', kind='fact', row_id=f.id) }}">
+      <button class="btn auto small danger" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+
+<h2 id="evidence">Evidence ledger ({{ evidence|length }})</h2>
+<div class="card">
+  <form method="post" action="{{ url_for('admin_evidence') }}" class="admin-form">
+    <input name="claim" placeholder="Approved claim, e.g. Rated 4.4 out of 5 by guests" required>
+    <input name="source" placeholder="Source, e.g. Guest Survey 2026" required>
+    <button class="btn primary auto" type="submit">Add evidence</button>
+    <button type="button" class="btn auto" onclick="fillEvidence()">Use example</button>
+  </form>
+</div>
+{% for e in evidence %}
+<div class="card admin-row">
+  <div class="row">
+    <span>{{ e.claim }} <span class="muted small">(Source: {{ e.source }})</span></span>
+    <form method="post" action="{{ url_for('admin_delete', kind='evidence', row_id=e.id) }}">
+      <button class="btn auto small danger" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+<script>
+var EXAMPLES = {
+  rule: [
+    {id: 'TONE-03', category: 'Tone', title: 'No fear-based pressure',
+     text: 'Do not use fear or urgency to push people to buy, for example "buy now or you will regret it".', severity: 'major'},
+    {id: 'TONE-04', category: 'Tone', title: 'No empty hype words',
+     text: 'Avoid hype words such as "amazing" or "unbelievable" unless the sentence also gives a concrete reason.', severity: 'minor'}
+  ],
+  term: [
+    {banned: 'cheapest', preferred: 'affordable', rule_id: 'TERM-02'},
+    {banned: 'Nova-Brew', preferred: 'NovaBrew', rule_id: 'TERM-01'}
+  ],
+  fact: [
+    {topic: 'rewards', fact: 'NovaBrew Rewards members earn 1 point for every Rs 10 spent.', source: 'Rewards Policy 2026'},
+    {topic: 'opening hours', fact: 'NovaBrew cafes are open from 7 AM to 10 PM.', source: 'Operations Handbook 2026'}
+  ],
+  evidence: [
+    {claim: 'Over 100,000 guests served', source: 'Annual Report 2026'},
+    {claim: 'Ranked No. 3 in the City Cafe Survey 2026', source: 'City Cafe Survey 2026'}
+  ]
+};
+
+function nextIndex(kind) {
+  var n = 0;
+  try { n = parseInt(sessionStorage.getItem('ex_' + kind) || '0', 10); } catch (e) {}
+  try { sessionStorage.setItem('ex_' + kind, String(n + 1)); } catch (e) {}
+  return n % EXAMPLES[kind].length;
+}
+
+function setv(path, name, value) {
+  var el = document.querySelector('form[action$="' + path + '"] [name="' + name + '"]');
+  if (el) el.value = value;
+}
+
+function fillExample(kind, path) {
+  var data = EXAMPLES[kind][nextIndex(kind)];
+  for (var key in data) { setv(path, key, data[key]); }
+}
+
+function fillRule() { fillExample('rule', '/admin/rule'); }
+function fillTerm() { fillExample('term', '/admin/term'); }
+function fillFact() { fillExample('fact', '/admin/fact'); }
+function fillEvidence() { fillExample('evidence', '/admin/evidence'); }
+</script>
+{% endblock %}

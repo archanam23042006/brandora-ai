@@ -576,7 +576,166 @@ def insights():
     conn.close()
     return render_template("insights.html", flagged=flagged,
                            pushback=pushback, reviewer=reviewer)
-    
+
+PROTECTED_RULES = {"TONE-02", "CLAIM-01", "CLAIM-02", "CLAIM-03",
+                   "TERM-01", "TERM-02", "FACT-01", "READ-01"}
+SEVERITIES = ("critical", "major", "minor")
+ADMIN_TABLES = {"term": "terminology", "fact": "approved_facts", "evidence": "evidence_ledger"}
+
+
+def admin_only():
+    if current_user.role != "admin":
+        abort(403)
+
+
+@app.route("/admin")
+@login_required
+def admin():
+    admin_only()
+    conn = get_db()
+    rules = conn.execute("SELECT * FROM rules ORDER BY category, id").fetchall()
+    terms = conn.execute("SELECT * FROM terminology ORDER BY id").fetchall()
+    facts = conn.execute("SELECT * FROM approved_facts ORDER BY id").fetchall()
+    evidence = conn.execute("SELECT * FROM evidence_ledger ORDER BY id").fetchall()
+    conn.close()
+    edit_id = request.args.get("edit", "")
+    edit_rule = next((r for r in rules if r["id"] == edit_id), None)
+    return render_template("admin.html", rules=rules, terms=terms, facts=facts,
+                           evidence=evidence, edit_rule=edit_rule, protected=PROTECTED_RULES)
+
+
+@app.route("/admin/rule", methods=["POST"])
+@login_required
+def admin_rule():
+    admin_only()
+    rid = request.form.get("id", "").strip().upper()
+    category = request.form.get("category", "").strip()
+    title = request.form.get("title", "").strip()
+    text = request.form.get("text", "").strip()
+    severity = request.form.get("severity", "major")
+    if not re.fullmatch(r"[A-Z]{2,8}-\d{2}", rid):
+        flash("Rule ID must look like TONE-03 (letters, a dash, two digits).")
+        return redirect(url_for("admin") + "#rules")
+    if not (category and title and text) or severity not in SEVERITIES:
+        flash("Please fill in the category, title and rule text.")
+        return redirect(url_for("admin") + "#rules")
+    if len(title) > 100 or len(text) > 600 or len(category) > 30:
+        flash("Text is too long. Keep the title under 100 and the rule under 600 characters.")
+        return redirect(url_for("admin") + "#rules")
+    conn = get_db()
+    existing = conn.execute("SELECT version FROM rules WHERE id = ?", (rid,)).fetchone()
+    if existing:
+        conn.execute(
+            "UPDATE rules SET category=?, title=?, text=?, severity=?, version=? WHERE id=?",
+            (category, title, text, severity, existing["version"] + 1, rid))
+        flash(f"Rule {rid} updated.")
+    else:
+        conn.execute(
+            "INSERT INTO rules (id, category, title, text, severity) VALUES (?,?,?,?,?)",
+            (rid, category, title, text, severity))
+        flash(f"Rule {rid} added.")
+    conn.commit()
+    conn.close()
+    return redirect(url_for("admin") + "#rules")
+
+
+@app.route("/admin/rule/<rule_id>/delete", methods=["POST"])
+@login_required
+def admin_rule_delete(rule_id):
+    admin_only()
+    if rule_id in PROTECTED_RULES:
+        flash(f"{rule_id} is a built-in detector. You can edit it but not delete it.")
+        return redirect(url_for("admin") + "#rules")
+    conn = get_db()
+    used = conn.execute("SELECT COUNT(*) FROM terminology WHERE rule_id = ?", (rule_id,)).fetchone()[0]
+    if used:
+        conn.close()
+        flash(f"{rule_id} is used by {used} banned term(s). Delete those terms first.")
+        return redirect(url_for("admin") + "#rules")
+    conn.execute("DELETE FROM rules WHERE id = ?", (rule_id,))
+    conn.commit()
+    conn.close()
+    flash(f"Rule {rule_id} deleted.")
+    return redirect(url_for("admin") + "#rules")
+
+
+@app.route("/admin/term", methods=["POST"])
+@login_required
+def admin_term():
+    admin_only()
+    banned = request.form.get("banned", "").strip()
+    preferred = request.form.get("preferred", "").strip()
+    rule_id = request.form.get("rule_id", "").strip()
+    if not banned or not preferred or len(banned) > 60 or len(preferred) > 60:
+        flash("Please fill in both words (up to 60 characters each).")
+        return redirect(url_for("admin") + "#terms")
+    conn = get_db()
+    if not conn.execute("SELECT 1 FROM rules WHERE id = ?", (rule_id,)).fetchone():
+        conn.close()
+        flash("Please choose a rule for this term.")
+        return redirect(url_for("admin") + "#terms")
+    dup = conn.execute("SELECT 1 FROM terminology WHERE lower(banned) = lower(?)", (banned,)).fetchone()
+    if dup:
+        conn.close()
+        flash(f'"{banned}" is already a banned term.')
+        return redirect(url_for("admin") + "#terms")
+    conn.execute("INSERT INTO terminology (banned, preferred, rule_id) VALUES (?,?,?)",
+                 (banned, preferred, rule_id))
+    conn.commit()
+    conn.close()
+    flash(f'Term added: "{banned}" will now be flagged and replaced with "{preferred}".')
+    return redirect(url_for("admin") + "#terms")
+
+
+@app.route("/admin/fact", methods=["POST"])
+@login_required
+def admin_fact():
+    admin_only()
+    topic = request.form.get("topic", "").strip()
+    fact = request.form.get("fact", "").strip()
+    source = request.form.get("source", "").strip()
+    if not (topic and fact and source) or len(fact) > 300:
+        flash("Please fill in topic, fact and source (fact up to 300 characters).")
+        return redirect(url_for("admin") + "#facts")
+    conn = get_db()
+    conn.execute("INSERT INTO approved_facts (topic, fact, source) VALUES (?,?,?)", (topic, fact, source))
+    conn.commit()
+    conn.close()
+    flash("Approved fact added.")
+    return redirect(url_for("admin") + "#facts")
+
+
+@app.route("/admin/evidence", methods=["POST"])
+@login_required
+def admin_evidence():
+    admin_only()
+    claim = request.form.get("claim", "").strip()
+    source = request.form.get("source", "").strip()
+    if not (claim and source) or len(claim) > 200:
+        flash("Please fill in the claim and its source.")
+        return redirect(url_for("admin") + "#evidence")
+    conn = get_db()
+    conn.execute("INSERT INTO evidence_ledger (claim, source) VALUES (?,?)", (claim, source))
+    conn.commit()
+    conn.close()
+    flash("Evidence added.")
+    return redirect(url_for("admin") + "#evidence")
+
+
+@app.route("/admin/delete/<kind>/<int:row_id>", methods=["POST"])
+@login_required
+def admin_delete(kind, row_id):
+    admin_only()
+    table = ADMIN_TABLES.get(kind)
+    if not table:
+        abort(404)
+    conn = get_db()
+    conn.execute(f"DELETE FROM {table} WHERE id = ?", (row_id,))
+    conn.commit()
+    conn.close()
+    flash("Deleted.")
+    return redirect(url_for("admin") + "#" + {"term": "terms", "fact": "facts", "evidence": "evidence"}[kind])
+
 seed()  # creates tables and sample data if the database is empty
 
 if __name__ == "__main__":

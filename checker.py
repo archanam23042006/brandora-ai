@@ -70,10 +70,17 @@ def run_rule_checks(text):
             add(t["rule_id"], m.start(), m.end(),
                 f'"{m.group()}" is not an approved term. Use "{pref}" instead.', pref)
 
-    # 2. Unsupported claims
+    # 2. Unsupported claims (an exact claim in the evidence ledger is allowed)
+    approved_spans = []
+    for l in ledger:
+        for m in re.finditer(re.escape(l["claim"]), text, re.IGNORECASE):
+            approved_spans.append((m.start(), m.end()))
     for rule_id, patterns in CLAIM_PATTERNS.items():
         for p in patterns:
             for m in re.finditer(p, text, re.IGNORECASE):
+                if rule_id == "CLAIM-01" and any(
+                        s <= m.start() and m.end() <= e for s, e in approved_spans):
+                    continue
                 add(rule_id, m.start(), m.end(),
                     CLAIM_EXPLAIN[rule_id], CLAIM_FIX[rule_id])
 
