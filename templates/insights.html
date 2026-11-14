@@ -46,5 +46,29 @@
   <tr><td colspan="3">No reviewer decisions yet.</td></tr>
   {% endfor %}
 </table>
+{% set ff = false_flag_rows() %}
+<h2>4. False-flag reports</h2>
+<table>
+  <tr><th>Rule</th><th>Name</th><th>Reports</th><th>Items affected</th></tr>
+  {% for r in ff.by_rule %}
+  <tr>
+    <td>{{ r.rule_id or "-" }}</td>
+    <td>{{ r.title or "-" }}</td>
+    <td>{{ r.reports }}</td>
+    <td>{{ r.items }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4">No false-flag reports yet.</td></tr>
+  {% endfor %}
+</table>
+{% if ff.notes %}
+<h3>Latest notes from users</h3>
+<ul>
+  {% for n in ff.notes %}
+  <li><b>{{ n.rule_id or "-" }}</b> on "{{ n.flagged_text }}": {{ n.note }} <small>({{ n.user_name }})</small></li>
+  {% endfor %}
+</ul>
+{% endif %}
+<p><small>Rules with many false-flag reports may be too strict or unclear. Review them in the Admin screen.</small></p>
 </div>
 {% endblock %}

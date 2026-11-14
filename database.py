@@ -117,6 +117,17 @@ CREATE TABLE IF NOT EXISTS reviewer_decisions (
     note TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS false_flags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    finding_id INTEGER NOT NULL,
+    item_id INTEGER NOT NULL,
+    rule_id TEXT,
+    flagged_text TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    note TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 

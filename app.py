@@ -311,6 +311,7 @@ def item(item_id):
         abort(403)
     version = latest_version(conn, item_id)
     findings = load_findings(conn, item_id, version["id"])
+    add_flag_info(conn, findings)
     versions = conn.execute(
         "SELECT v.version_no, v.created_at, u.name AS author, "
         "(SELECT COUNT(*) FROM findings WHERE version_id = v.id) AS finding_count "
@@ -735,6 +736,61 @@ def admin_delete(kind, row_id):
     conn.close()
     flash("Deleted.")
     return redirect(url_for("admin") + "#" + {"term": "terms", "fact": "facts", "evidence": "evidence"}[kind])
+
+def add_flag_info(conn, findings):
+    for f in findings:
+        rows = conn.execute(
+            "SELECT user_id FROM false_flags WHERE item_id = ? AND rule_id IS ? AND flagged_text = ?",
+            (f["item_id"], f["rule_id"], f["flagged_text"])).fetchall()
+        f["false_count"] = len(rows)
+        f["my_flag"] = any(r["user_id"] == current_user.id for r in rows)
+
+
+@app.route("/finding/<int:finding_id>/false-flag", methods=["POST"])
+@login_required
+def false_flag(finding_id):
+    note = request.form.get("note", "").strip()[:300]
+    conn = get_db()
+    f = conn.execute("SELECT * FROM findings WHERE id = ?", (finding_id,)).fetchone()
+    if not f:
+        conn.close()
+        abort(404)
+    it = get_item_or_404(conn, f["item_id"])
+    if current_user.role == "creator" and it["creator_id"] != current_user.id:
+        conn.close()
+        abort(403)
+    existing = conn.execute(
+        "SELECT id FROM false_flags WHERE item_id = ? AND rule_id IS ? AND flagged_text = ? AND user_id = ?",
+        (f["item_id"], f["rule_id"], f["flagged_text"], current_user.id)).fetchone()
+    if existing:
+        conn.execute("DELETE FROM false_flags WHERE id = ?", (existing["id"],))
+        flash("Your false-flag report was removed.")
+    else:
+        conn.execute(
+            "INSERT INTO false_flags (finding_id, item_id, rule_id, flagged_text, user_id, note) "
+            "VALUES (?,?,?,?,?,?)",
+            (finding_id, f["item_id"], f["rule_id"], f["flagged_text"], current_user.id, note))
+        flash("Thanks. Your false-flag report was saved and will show up in the insights.")
+    conn.commit()
+    conn.close()
+    return redirect(url_for("item", item_id=it["id"]) + f"#finding-{finding_id}")
+
+def false_flag_rows():
+    conn = get_db()
+    by_rule = conn.execute(
+        "SELECT ff.rule_id AS rule_id, r.title AS title, COUNT(*) AS reports, "
+        "COUNT(DISTINCT ff.item_id) AS items "
+        "FROM false_flags ff LEFT JOIN rules r ON r.id = ff.rule_id "
+        "GROUP BY ff.rule_id ORDER BY reports DESC").fetchall()
+    notes = conn.execute(
+        "SELECT ff.rule_id AS rule_id, ff.flagged_text AS flagged_text, ff.note AS note, "
+        "u.name AS user_name FROM false_flags ff JOIN users u ON u.id = ff.user_id "
+        "WHERE ff.note IS NOT NULL AND ff.note != '' ORDER BY ff.id DESC LIMIT 5").fetchall()
+    conn.close()
+    return {"by_rule": by_rule, "notes": notes}
+
+
+app.jinja_env.globals["false_flag_rows"] = false_flag_rows
 
 seed()  # creates tables and sample data if the database is empty
 

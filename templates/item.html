@@ -58,7 +58,16 @@ function useRewrite() {
     {% elif f.state == 'waiting' %}Waiting for a reviewer: {{ f.decision_reason }}
     {% elif f.state == 'allowed' %}Allowed as an exception by {{ f.reviewer_name }}{% if f.review_note %}: {{ f.review_note }}{% endif %}
     {% else %}Reviewer says MUST FIX ({{ f.reviewer_name }}): {{ f.review_note }}{% endif %}
-  </p>
+  </p>  <form method="post" action="{{ url_for('false_flag', finding_id=f.id) }}" class="flagform">
+    {% if f.my_flag %}
+    <span class="muted small">You reported this as a false flag.</span>
+    <button class="btn auto small" type="submit">Undo report</button>
+    {% else %}
+    <input type="text" name="note" placeholder="Think this flag is wrong? Say why (optional)">
+    <button class="btn auto small" type="submit">Report false flag</button>
+    {% endif %}
+    {% if f.false_count %}<span class="muted small">{{ f.false_count }} report(s) on this issue</span>{% endif %}
+  </form>
 
   {% if can_edit %}
     {% if request.args.get('err') == f.id|string %}

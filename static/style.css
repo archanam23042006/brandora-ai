@@ -121,3 +121,8 @@ html { scroll-behavior: smooth; }
 .btn.small { padding: 6px 12px; font-size: 13px; }
 .try-box { border-left: 6px solid #0f766e; background: #eef6f5; }
 .try-box ol { margin: 8px 0; padding-left: 20px; line-height: 1.6; }
+.flagform { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.flagform input { flex: 1; min-width: 180px; margin-bottom: 0; padding: 6px 10px; font-size: 13px; }
+.insight-row { margin-bottom: 14px; }
+.bar { height: 10px; background: #e5eceb; border-radius: 6px; margin-top: 6px; overflow: hidden; }
+.bar span { display: block; height: 100%; background: #0f766e; }
