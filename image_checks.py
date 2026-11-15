@@ -31,6 +31,22 @@ def contrast_ratio(data):
     light = sum(lums[-k:]) / k
     return (light + 0.05) / (dark + 0.05)
 
+BRAND_COLOURS = {"Coffee brown": (75, 46, 30), "Cream": (245, 236, 215), "Green": (15, 118, 110)}
+
+
+def brand_colour_share(data):
+    """Share of pixels close to any approved brand colour (0 to 1)."""
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    img.thumbnail((100, 100))
+    px = list(img.getdata())
+    close = 0
+    for r, g, b in px:
+        for cr, cg, cb in BRAND_COLOURS.values():
+            if (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2 < 60 ** 2:
+                close += 1
+                break
+    return close / len(px)
+
 def run_image_checks(item_id):
     conn = get_db()
     row = conn.execute(
@@ -68,4 +84,14 @@ def run_image_checks(item_id):
                 "Use a darker or lighter background, or add a solid panel behind the text."))
     except Exception:
         pass
+    try:
+        share = brand_colour_share(row["data"])
+        if share < 0.05:
+            out.append(_finding(
+                "minor", "Image uses almost none of the approved brand colours",
+                "Only " + format(share * 100, ".0f") + "% of this image is close to the approved palette "
+                "(" + ", ".join(BRAND_COLOURS) + "). This is an estimate.",
+                "Use the approved brand colours in the background or text, or ask a reviewer to allow an exception."))
+    except Exception:
+        pass   
     return out
