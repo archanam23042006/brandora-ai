@@ -49,6 +49,9 @@ function useRewrite() {
   <span class="chip sev-minor">{{ counts.minor }} minor</span>
 </p>
 
+{% if relevant_ids %}
+<p class="muted small">Rules selected for the AI review (TF-IDF): {{ relevant_ids|join(', ') }}. The rule engine still checks every rule.</p>
+{% endif %}
 {% if not findings %}
 <div class="card">No issues found in this version.</div>
 {% endif %}

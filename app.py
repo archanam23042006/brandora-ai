@@ -15,6 +15,7 @@ from database import get_db
 from seed import seed
 from review import create_submission, add_version, add_image_findings
 from ai_review import get_cached 
+from retrieval import relevant_rules
 
 load_dotenv()
 
@@ -390,6 +391,11 @@ def item(item_id):
     ai_data = get_cached(version["body"])
     ai_ok = ai_data is not None
     ai_rewrite = (ai_data or {}).get("rewrite", "")
+    conn = get_db()
+    all_rules = [dict(r) for r in conn.execute("SELECT id, title, text FROM rules")]
+    conn.close()
+    chosen_rules, _scores = relevant_rules(version["body"], all_rules)
+    relevant_ids = [r["id"] for r in chosen_rules]
     role = current_user.role
     can_review = role in ("reviewer", "admin") and it["status"] == "Pending Review"
     can_approve = role in ("manager", "admin") and it["status"] == "Ready for Approval"
@@ -399,7 +405,8 @@ def item(item_id):
                            can_approve=can_approve, waiting_count=waiting_count,
                            stages=STAGES, stage=stage_of(it["status"]),
                            next_msg=next_message(it["status"], role),
-                           ai_ok=ai_ok, ai_rewrite=ai_rewrite)
+                           ai_ok=ai_ok, ai_rewrite=ai_rewrite,
+                           relevant_ids=relevant_ids)
 
 
 @app.route("/finding/<int:finding_id>/decide", methods=["POST"])
