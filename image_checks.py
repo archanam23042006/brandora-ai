@@ -1,3 +1,7 @@
+import hashlib
+import os
+import requests
+from checker import run_rule_checks
 import io
 from PIL import Image
 from database import get_db
@@ -47,6 +51,41 @@ def brand_colour_share(data):
                 break
     return close / len(px)
 
+_OCR_CACHE = {}
+
+
+def ocr_text(data):
+    """Reads text inside the image using the OCR.space web API. Returns None if it fails."""
+    key = os.getenv("OCR_API_KEY")
+    if not key:
+        return None
+    h = hashlib.sha256(data).hexdigest()
+    if h in _OCR_CACHE:
+        return _OCR_CACHE[h]
+    try:
+        img = Image.open(io.BytesIO(data)).convert("RGB")
+        img.thumbnail((1600, 1600))
+        quality = 85
+        while True:
+            buf = io.BytesIO()
+            img.save(buf, "JPEG", quality=quality)
+            if buf.tell() <= 900 * 1024 or quality <= 30:
+                break
+            quality -= 15
+        r = requests.post(
+            "https://api.ocr.space/parse/image",
+            files={"file": ("image.jpg", buf.getvalue(), "image/jpeg")},
+            data={"apikey": key, "language": "eng", "OCREngine": "2"},
+            timeout=25)
+        res = r.json()
+        if res.get("IsErroredOnProcessing"):
+            return None
+        text = " ".join(p.get("ParsedText", "") for p in res.get("ParsedResults", [])).strip()
+        _OCR_CACHE[h] = text
+        return text
+    except Exception:
+        return None
+
 def run_image_checks(item_id):
     conn = get_db()
     row = conn.execute(
@@ -93,5 +132,14 @@ def run_image_checks(item_id):
                 "(" + ", ".join(BRAND_COLOURS) + "). This is an estimate.",
                 "Use the approved brand colours in the background or text, or ask a reviewer to allow an exception."))
     except Exception:
-        pass   
+        pass 
+
+    try:
+        text = ocr_text(row["data"])
+        if text:
+            for f in run_rule_checks(text):
+                f["explanation"] = "Text found inside the image: " + f["explanation"]
+                out.append(f)
+    except Exception:
+        pass  
     return out

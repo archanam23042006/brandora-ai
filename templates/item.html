@@ -23,6 +23,7 @@
   <h3>Image</h3>
   <img src="{{ url_for('item_image', item_id=item.id) }}" alt="{{ img.alt_text }}" style="max-width:100%; max-height:320px; border-radius:8px; border:1px solid #d5e0de;">
   <p class="muted small">Alt text: {{ img.alt_text or '(none)' }}</p>
+  <p class="muted small">Image checks: alt text, contrast and brand colours run in our app. Text inside the image is read by an outside OCR service (OCR.space), which receives a shrunk copy of the image. Results are advice only.</p>
   {% if can_edit %}
   <form method="post" action="{{ url_for('item_alt', item_id=item.id) }}" class="decide">
     <input type="text" name="alt_text" value="{{ img.alt_text or '' }}" placeholder="Describe the image for people who cannot see it" maxlength="300">
