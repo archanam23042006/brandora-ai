@@ -3,6 +3,7 @@ import json
 from database import get_db
 from checker import run_rule_checks
 from ai import ask_ai, mask_sensitive, MODEL
+from retrieval import relevant_rules
 
 CACHE_VERSION = "v2"  # changing this ignores old cached AI answers
 
@@ -100,6 +101,9 @@ def run_ai_review(body, rule_findings):
     terms = [dict(r) for r in conn.execute("SELECT banned, preferred FROM terminology")]
     conn.close()
     already = [{"rule_id": f["rule_id"], "flagged_text": f["flagged_text"]} for f in rule_findings]
+    all_rules = rules
+    rules, _scores = relevant_rules(body, all_rules)
+    print("Relevant rules sent to AI:", [r["id"] for r in rules])
     context = {"rules": rules, "approved_facts": facts, "banned_terms": terms,
                "approved_claims": claims}
     payload = dict(context)
