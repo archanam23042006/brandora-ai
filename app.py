@@ -848,6 +848,45 @@ def false_flag_rows():
 
 app.jinja_env.globals["false_flag_rows"] = false_flag_rows
 
+def image_info(item_id):
+    conn = get_db()
+    row = conn.execute(
+        "SELECT id, alt_text FROM item_images WHERE item_id = ? ORDER BY id DESC LIMIT 1",
+        (item_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+app.jinja_env.globals["image_info"] = image_info
+
+
+@app.route("/item/<int:item_id>/alt", methods=["POST"])
+@login_required
+def item_alt(item_id):
+    conn = get_db()
+    it = get_item_or_404(conn, item_id)
+    if not can_edit_item(it):
+        conn.close()
+        abort(403)
+    row = conn.execute(
+        "SELECT id, alt_text FROM item_images WHERE item_id = ? ORDER BY id DESC LIMIT 1",
+        (item_id,)).fetchone()
+    if not row:
+        conn.close()
+        abort(404)
+    alt = request.form.get("alt_text", "").strip()[:300]
+    if alt == (row["alt_text"] or ""):
+        conn.close()
+        flash("Alt text was not changed.")
+        return redirect(url_for("item", item_id=item_id))
+    conn.execute("UPDATE item_images SET alt_text = ? WHERE id = ?", (alt, row["id"]))
+    body = latest_version(conn, item_id)["body"]
+    conn.commit()
+    conn.close()
+    n = add_version(item_id, current_user.id, body)
+    flash(f"Alt text saved. Version {n} was checked again.")
+    return redirect(url_for("item", item_id=item_id))
+
 seed()  # creates tables and sample data if the database is empty
 
 if __name__ == "__main__":

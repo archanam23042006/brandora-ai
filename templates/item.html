@@ -8,7 +8,7 @@
   {% endfor %}
 </div>
 {% if next_msg %}
-<div class="next-box{% if item.status == 'Rejected' %} rejected{% endif %}"></div><b>What to do now:</b> {{ next_msg }}</div>
+<div class="next-box{% if item.status == 'Rejected' %} rejected{% endif %}"><b>What to do now:</b> {{ next_msg }}</div>
 {% endif %}
 <div class="card">
   <div class="row">
@@ -18,6 +18,18 @@
   <p class="muted small">{{ item.content_type }} | by {{ item.creator_name }} | Version {{ version.version_no }}</p>
   <a class="btn auto" href="{{ url_for('passport', item_id=item.id) }}">View Brand Passport</a>
   <div class="content-box">{{ version.body }}</div>
+  {% set img = image_info(item.id) %}
+  {% if img %}
+  <h3>Image</h3>
+  <img src="{{ url_for('item_image', item_id=item.id) }}" alt="{{ img.alt_text }}" style="max-width:100%; max-height:320px; border-radius:8px; border:1px solid #d5e0de;">
+  <p class="muted small">Alt text: {{ img.alt_text or '(none)' }}</p>
+  {% if can_edit %}
+  <form method="post" action="{{ url_for('item_alt', item_id=item.id) }}" class="decide">
+    <input type="text" name="alt_text" value="{{ img.alt_text or '' }}" placeholder="Describe the image for people who cannot see it" maxlength="300">
+    <button class="btn" type="submit">Save alt text and re-check</button>
+  </form>
+  {% endif %}
+  {% endif %}
 </div>
 
 <script>
