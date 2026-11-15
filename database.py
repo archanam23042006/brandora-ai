@@ -128,6 +128,17 @@ CREATE TABLE IF NOT EXISTS false_flags (
     note TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS item_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    mime TEXT NOT NULL,
+    data BLOB NOT NULL,
+    alt_text TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 """
 
 

@@ -1,16 +1,19 @@
 import os
 import re
+import io
+from PIL import Image
+from flask import Response
+from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from flask import (Flask, render_template, request, redirect, url_for,
                    flash, abort)
 from flask_login import (LoginManager, UserMixin, login_user, logout_user,
                          login_required, current_user)
-import re
 from werkzeug.security import check_password_hash, generate_password_hash
 from database import get_db
 from seed import seed
-from review import create_submission, add_version
+from review import create_submission, add_version, add_image_findings
 from ai_review import get_cached 
 
 load_dotenv()
@@ -275,6 +278,28 @@ def home():
     return render_template("home.html", items=items, todo=todo)
 
 
+ALLOWED_IMAGES = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
+MAX_IMAGE = 2 * 1024 * 1024
+
+
+def read_upload_image(file):
+    """Returns (data, mime, error). No file means (None, None, None)."""
+    if not file or not file.filename:
+        return None, None, None
+    data = file.read()
+    if len(data) > MAX_IMAGE:
+        return None, None, "The image is too big. Maximum is 2 MB."
+    try:
+        img = Image.open(io.BytesIO(data))
+        fmt = img.format
+        img.verify()
+    except Exception:
+        return None, None, "That file is not a valid image."
+    if fmt not in ALLOWED_IMAGES:
+        return None, None, "Please use a PNG, JPG or WEBP image."
+    return data, ALLOWED_IMAGES[fmt], None
+
+
 @app.route("/submit", methods=["GET", "POST"])
 @login_required
 def submit():
@@ -285,15 +310,46 @@ def submit():
         title = request.form.get("title", "").strip()
         content_type = request.form.get("content_type", "Social media post")
         body = request.form.get("body", "").strip()
+        alt_text = request.form.get("alt_text", "").strip()
         if len(re.findall(r"[A-Za-z0-9]", title)) < 3:
             flash("Please write a proper title (at least 3 letters or numbers).")
             return render_template("submit.html", title=title, body=body)
         if not body:
             flash("Please paste some content to review.")
             return render_template("submit.html", title=title, body=body)
+        img_data, img_mime, img_err = read_upload_image(request.files.get("image"))
+        if img_err:
+            flash(img_err)
+            return render_template("submit.html", title=title, body=body)
         item_id = create_submission(current_user.id, title, content_type, body)
+        if img_data:
+            conn = get_db()
+            conn.execute(
+                "INSERT INTO item_images (item_id, filename, mime, data, alt_text) "
+                "VALUES (?,?,?,?,?)",
+                (item_id, secure_filename(request.files["image"].filename) or "image",
+                 img_mime, img_data, alt_text))
+            conn.commit()
+            conn.close()
+            add_image_findings(item_id)
         return redirect(url_for("item", item_id=item_id))
     return render_template("submit.html")
+
+
+@app.route("/item/<int:item_id>/image")
+@login_required
+def item_image(item_id):
+    conn = get_db()
+    it = get_item_or_404(conn, item_id)
+    if current_user.role == "creator" and it["creator_id"] != current_user.id:
+        conn.close()
+        abort(403)
+    row = conn.execute("SELECT * FROM item_images WHERE item_id = ? ORDER BY id DESC LIMIT 1",
+                       (item_id,)).fetchone()
+    conn.close()
+    if not row:
+        abort(404)
+    return Response(row["data"], mimetype=row["mime"])
 
 
 @app.route("/item/<int:item_id>")

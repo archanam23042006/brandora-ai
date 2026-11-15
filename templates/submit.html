@@ -4,7 +4,7 @@
 <div class="card">
   <h1>Submit content for brand review</h1>
   <p class="muted">Paste your text. It is checked against the approved guidelines, facts and terminology before publication.</p>
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     <label>Title</label>
     <input type="text" name="title" placeholder="e.g. Diwali Instagram post" value="{{ title or '' }}" required>
     <label>Content type</label>
@@ -16,6 +16,11 @@
     </select>
     <label>Content</label>
     <textarea id="body" name="body" rows="8" placeholder="Paste your content here..." required>{{ body or '' }}</textarea>
+    <label>Image (optional)</label>
+    <input type="file" name="image" accept="image/png,image/jpeg,image/webp">
+    <label>Alt text for the image</label>
+    <input type="text" name="alt_text" placeholder="Describe the image for people who cannot see it">
+    <p class="hint">PNG, JPG or WEBP, up to 2 MB. Alt text helps people using screen readers.</p>
     <button type="button" class="btn" onclick="fillSample()">Use sample text</button>
     <button class="btn primary" type="submit">Review content</button>
   </form>

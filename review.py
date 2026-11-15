@@ -1,6 +1,7 @@
 from database import get_db
 from checker import run_rule_checks
 from ai_review import run_ai_review, clean_findings
+from image_checks import run_image_checks
 
 
 def carry_over(conn, prev_version_id, new_findings):
@@ -27,6 +28,7 @@ def save_findings(item_id, version_id, body, prev_version_id=None):
         rules = {r["id"]: r["severity"] for r in conn.execute("SELECT id, severity FROM rules")}
         findings = findings + clean_findings(ai_data, body, rules,
                                              [f["flagged_text"] for f in findings])
+    findings = findings + run_image_checks(item_id)    
     new_findings = []
     for f in findings:
         cur = conn.execute(
@@ -72,3 +74,20 @@ def add_version(item_id, user_id, body):
     conn.close()
     save_findings(item_id, version_id, body, prev_version_id=prev["id"])
     return prev["version_no"] + 1
+
+def add_image_findings(item_id):
+    items = run_image_checks(item_id)
+    if not items:
+        return
+    conn = get_db()
+    v = conn.execute(
+        "SELECT id FROM content_versions WHERE item_id = ? ORDER BY version_no DESC LIMIT 1",
+        (item_id,)).fetchone()
+    for f in items:
+        conn.execute(
+            "INSERT INTO findings (item_id, version_id, rule_id, origin, flagged_text, "
+            "explanation, severity, confidence, suggested_fix) VALUES (?,?,?,?,?,?,?,?,?)",
+            (item_id, v["id"], f["rule_id"], f["origin"], f["flagged_text"],
+             f["explanation"], f["severity"], f["confidence"], f["suggested_fix"]))
+    conn.commit()
+    conn.close()
