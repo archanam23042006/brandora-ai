@@ -168,6 +168,29 @@ def seed_samples():
     add_approval(i3, reviewer, "sent_back",
                  "Some findings must be fixed. See the notes on each finding.")
 
+    # 4) PENDING REVIEW: fact check example
+    i4, v4 = make_item("[Sample] Facts check", "Pending Review", [
+        "Visit any of our 60 cafes today and meet your barista."])
+    add_finding(i4, v4[0], "FACT-01", "60 cafes",
+                "Approved facts say NovaBrew has 45 cafes.", "major",
+                "Use 45 cafes.", "accept")
+    add_approval(i4, creator, "submitted", "Version 1 submitted.")
+
+    # 5) PENDING REVIEW: claims and tone example
+    i5, v5 = make_item("[Sample] Claims and tone", "Pending Review", [
+        "Our cold brew is the best in the city and guaranteed to wake you up!!"])
+    add_finding(i5, v5[0], "CLAIM-01", "the best in the city",
+                "Ranking claim is not in the approved evidence ledger.", "critical",
+                "Remove the ranking claim.", "accept")
+    add_finding(i5, v5[0], "CLAIM-02", "guaranteed",
+                "Absolute guarantees are not allowed.", "critical",
+                "Remove 'guaranteed'.", "accept")
+    add_finding(i5, v5[0], "TONE-02", "!!",
+                "Avoid more than one exclamation mark in a row.", "minor",
+                "Use a single '!'.", "accept")
+    add_approval(i5, creator, "submitted", "Version 1 submitted.")
+
+    
     conn.commit()
     conn.close()
     print("Sample items added.")
