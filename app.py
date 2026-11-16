@@ -894,6 +894,29 @@ def item_alt(item_id):
     flash(f"Alt text saved. Version {n} was checked again.")
     return redirect(url_for("item", item_id=item_id))
 
+@app.errorhandler(403)
+def handle_403(e):
+    return render_template("error.html", title="Not allowed",
+                           message="You do not have permission to open this page."), 403
+
+
+@app.errorhandler(404)
+def handle_404(e):
+    return render_template("error.html", title="Page not found",
+                           message="We could not find that page. Check the address or go back to the home page."), 404
+
+
+@app.errorhandler(413)
+def handle_413(e):
+    return render_template("error.html", title="File too large",
+                           message="That upload is too big. Please use an image under 2 MB."), 413
+
+
+@app.errorhandler(500)
+def handle_500(e):
+    return render_template("error.html", title="Something went wrong",
+                           message="Please go back and try again. Your earlier work is saved."), 500
+
 seed()  # creates tables and sample data if the database is empty
 
 if __name__ == "__main__":

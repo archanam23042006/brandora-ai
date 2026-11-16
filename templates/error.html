@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Brandora AI{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>{{ title }}</h1>
+  <p>{{ message }}</p>
+  <a class="btn primary" href="{{ url_for('index') }}">Back to home</a>
+</div>
+{% endblock %}
