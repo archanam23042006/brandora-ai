@@ -637,9 +637,18 @@ def insights():
     reviewer = conn.execute(
         "SELECT rule_id, outcome, COUNT(*) AS cnt FROM reviewer_decisions "
         "GROUP BY rule_id, outcome ORDER BY cnt DESC").fetchall()
+    learn = conn.execute(
+        "SELECT f.rule_id, r.title, COUNT(*) AS ignored, "
+        "COUNT(DISTINCT f.item_id) AS items "
+        "FROM decisions d JOIN findings f ON f.id = d.finding_id "
+        "LEFT JOIN rules r ON r.id = f.rule_id "
+        "WHERE lower(d.action) LIKE '%ignore%' "
+        "GROUP BY f.rule_id HAVING COUNT(*) >= 3 "
+        "ORDER BY ignored DESC").fetchall()
     conn.close()
     return render_template("insights.html", flagged=flagged,
-                           pushback=pushback, reviewer=reviewer)
+                           pushback=pushback, reviewer=reviewer,
+                           learn=learn)
 
 PROTECTED_RULES = {"TONE-02", "CLAIM-01", "CLAIM-02", "CLAIM-03",
                    "TERM-01", "TERM-02", "FACT-01", "READ-01"}

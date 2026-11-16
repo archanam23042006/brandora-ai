@@ -5,6 +5,37 @@
 <h1>Brand Memory</h1>
 <p>Repeated issues and unclear-guideline signals across all content.</p>
 
+{% set ff2 = false_flag_rows() %}
+{% set n = namespace(c=0) %}
+<h2>Learning suggestions</h2>
+<p><small>The system watches repeated ignores and false-flag reports and suggests rules to review. It only suggests. An Admin decides, and nothing changes automatically.</small></p>
+<table>
+  <tr><th>Rule</th><th>Name</th><th>Signal</th><th>Suggestion</th></tr>
+  {% for r in learn %}
+  {% set n.c = n.c + 1 %}
+  <tr>
+    <td>{{ r.rule_id or "-" }}</td>
+    <td>{{ r.title or "-" }}</td>
+    <td>Ignored {{ r.ignored }} times on {{ r.items }} item(s)</td>
+    <td>Review this rule in Admin. The wording may be unclear or too strict.</td>
+  </tr>
+  {% endfor %}
+  {% for r in ff2.by_rule %}
+  {% if r.reports >= 2 %}
+  {% set n.c = n.c + 1 %}
+  <tr>
+    <td>{{ r.rule_id or "-" }}</td>
+    <td>{{ r.title or "-" }}</td>
+    <td>{{ r.reports }} false-flag reports on {{ r.items }} item(s)</td>
+    <td>Review this rule in Admin. Users say it flags correct content.</td>
+  </tr>
+  {% endif %}
+  {% endfor %}
+  {% if n.c == 0 %}
+  <tr><td colspan="4">No suggestions yet. A rule appears here after 3 or more ignores, or 2 or more false-flag reports.</td></tr>
+  {% endif %}
+</table>
+
 <h2>1. Most flagged rules</h2>
 <table>
   <tr><th>Rule</th><th>Name</th><th>Times flagged</th><th>Items affected</th></tr>
