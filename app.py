@@ -926,6 +926,46 @@ def handle_500(e):
     return render_template("error.html", title="Something went wrong",
                            message="Please go back and try again. Your earlier work is saved."), 500
 
+@app.route("/admin/guideline", methods=["GET", "POST"])
+@login_required
+def admin_guideline():
+    admin_only()
+    candidates = []
+    if request.method == "POST":
+        f = request.files.get("file")
+        if not f or not f.filename:
+            flash("Please choose a .txt file.")
+            return redirect(url_for("admin_guideline"))
+        if not f.filename.lower().endswith(".txt"):
+            flash("Only .txt files are allowed.")
+            return redirect(url_for("admin_guideline"))
+        raw = f.read(20001)
+        if len(raw) > 20000:
+            flash("File is too big. Keep it under 20 KB.")
+            return redirect(url_for("admin_guideline"))
+        try:
+            content = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            flash("That file is not readable text. Save it as UTF-8 .txt.")
+            return redirect(url_for("admin_guideline"))
+        lines = [ln.strip() for ln in content.splitlines()]
+        lines = [ln for ln in lines if len(ln) >= 10][:20]
+        if not lines:
+            flash("No usable lines found. Write one guideline per line.")
+            return redirect(url_for("admin_guideline"))
+        conn = get_db()
+        used = {row["id"] for row in conn.execute("SELECT id FROM rules").fetchall()}
+        conn.close()
+        n = 1
+        for ln in lines:
+            while f"GUIDE-{n:02d}" in used:
+                n += 1
+            rid = f"GUIDE-{n:02d}"
+            used.add(rid)
+            title = ln if len(ln) <= 60 else ln[:57] + "..."
+            candidates.append({"id": rid, "title": title, "text": ln[:600]})
+    return render_template("guideline.html", candidates=candidates)
+
 seed()  # creates tables and sample data if the database is empty
 
 if __name__ == "__main__":

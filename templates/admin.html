@@ -3,7 +3,8 @@
 {% block content %}
 <div class="card">
   <h1>Brand Vault admin</h1>
-  <p class="muted">Manage the approved guidelines. Changes apply to the next review. Banned terms are enforced by the rule engine straight away. Rules, facts and evidence are also given to the AI review.</p>
+ <p class="muted">Manage the approved guidelines. Changes apply to the next review. Banned terms are enforced by the rule engine straight away. Rules, facts and evidence are also given to the AI review.</p>
+  <p><a href="{{ url_for('admin_guideline') }}"><b>Upload guidelines (.txt file)</b></a> - each line becomes a candidate rule that you approve.</p>
 </div>
 
 <div class="card try-box">

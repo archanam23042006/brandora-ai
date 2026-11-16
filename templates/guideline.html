@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Upload guidelines{% endblock %}
+{% block content %}
+<div class="card">
+<h1>Upload guidelines (.txt)</h1>
+<p>Write one guideline per line in a .txt file (max 20 lines, 20 KB). Each line becomes a <b>candidate rule</b>. Nothing is added until you click "Add as rule".</p>
+<form method="post" enctype="multipart/form-data">
+  <input type="file" name="file" accept=".txt" required>
+  <button type="submit">Read file</button>
+</form>
+<p><a href="{{ url_for('admin') }}">Back to Admin</a></p>
+</div>
+
+{% if candidates %}
+<h2>Candidate rules ({{ candidates|length }})</h2>
+<p><small>You can edit any field before adding. After you add one, you return to the Admin page. Upload the file again to add the next one.</small></p>
+{% for c in candidates %}
+<form method="post" action="{{ url_for('admin_rule') }}" class="card">
+  <input name="id" value="{{ c.id }}" required>
+  <input name="category" value="Guideline" required>
+  <input name="title" value="{{ c.title }}" required>
+  <textarea name="text" rows="3" required>{{ c.text }}</textarea>
+  <select name="severity">
+    <option value="minor">minor</option>
+    <option value="major" selected>major</option>
+    <option value="critical">critical</option>
+  </select>
+  <button type="submit">Add as rule</button>
+</form>
+{% endfor %}
+{% endif %}
+{% endblock %}
